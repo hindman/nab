@@ -1,0 +1,86 @@
+--------
+TODO
+--------
+
+- Refactor to use a class-based approach.
+
+    - Basic structure.
+
+        class Step(object):
+            ...
+
+        class Range(Step):
+
+            NAME = '...'
+
+            DESC = '...'
+
+            OPTS = [...]
+
+            def begin(self, opts):
+                ...
+
+            def run(self, ln, opts):
+                return ...
+
+            def end(self, opts):
+                ...
+
+    - Benefits:
+
+        - Some namespacing and code layout benefits: easier to define multiple
+        steps in one file.
+
+        - More extensible when adding new features.
+
+        - Steps can inherit from each other.
+
+        - Provides a scope for step-writers to persist information.
+
+- Add support for file-begin file-end.
+
+- Add support for file-based output and in-place editing.
+    - Currently, we can process multiple files as inputs.
+    - But the output is a single stream.
+    - We might want each input file to go to a separate output file.
+    - And we might want in-place editing.
+
+- Action docs.
+
+- Better --help: show step docs.
+
+- Some tests.
+
+- More steps:
+    cols
+    wrap
+    flip-flop
+    filename
+    linenumber
+    tail
+    jsond
+    dive
+
+- Also support leading-dot syntax:
+
+    m .skip 1 .head 12 .findall '\d+' .str .nl
+
+- Switch PATHS to --paths?
+
+- Decide how to package the project.
+
+--------
+Misc notes
+--------
+
+Project name considered:
+
+    nab      | ####
+    ax       | .
+    pipework | .
+    psa      | Python, sed, awk.
+    rif      | Short for rifle.
+    riff     | Short for riffle.
+    saw      | .
+    yank     | .
+
