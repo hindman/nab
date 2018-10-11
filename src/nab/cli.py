@@ -28,8 +28,9 @@ def main(args = None):
         exit(0)
 
     # Run BEGIN code. Although most begin hooks return nothing, it can return a
-    # dict, is used to create a modified Action. This allow a begin hook to
-    # define its run hook dynamically.
+    # dict. If this occurs, the hook's Action will be updated with the params
+    # from that dict. This allow a begin hook to define its other hooks
+    # dynamically (eg, see the run_begin() hook).
     for i, a in enumerate(opts.actions):
         if a.begin:
             d = a.begin(a.opts)
@@ -40,8 +41,7 @@ def main(args = None):
 
     # Process lines.
     for ln in process_lines(opts):
-        if opts.auto_print and ln.val is not None:
-            print(ln.val, end = '')
+        pass
 
     # Run END code.
     for a in opts.actions:
@@ -64,7 +64,6 @@ def parse_args(orig_args):
     # Initialize the top-level Opts data structure.
     opts = Opts(
         help = False,
-        auto_print = True,
         actions = [],
         paths = [],
         valid_actions = get_known_actions(),
@@ -94,6 +93,8 @@ def parse_args(orig_args):
     pairs = [(getitem(js, i), getitem(js, i + 1)) for i in range(len(js))]
 
     # Split the args into a dict mapping each action name to its list of args.
+    # TODO: do not use a dict; it prevents the use of a Step more than once
+    # (eg wr_run).
     action_args = {
         args[i + 1] : args[i + 2 : j]
         for i, j in pairs
@@ -121,6 +122,8 @@ def parse_args(orig_args):
         a = create_action(aname, xs)
         opts.actions.append(a)
 
+    # TODO: convert this to a proper action: anl_begin(). Do this
+    # by allowing a Step to declare itself to occur after all other _begin() work.
     if autoline:
         a1 = create_action('chomp', [])
         a2 = create_action('nl', [])

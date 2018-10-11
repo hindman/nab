@@ -9,10 +9,17 @@ import re
 # Actions.
 ####
 
-# Action: noprint.
+# Action: pr and wr.
 
-def noprint_begin(opts):
-    opts.auto_print = False
+def pr_run(ln, opts):
+    if ln.val is not None:
+        print(ln.val)
+    return ln.val
+
+def wr_run(ln, opts):
+    if ln.val is not None:
+        print(ln.val, end = '')
+    return ln.val
 
 # Action: strip.
 
@@ -87,7 +94,10 @@ def rindex_begin(opts):
 
 rindex_run = index_run
 
-# Action: nl.
+# Action: nl and anl.
+
+def anl_begin(ln, opts):
+    pass
 
 def nl_run(ln, opts):
     v = ln.val

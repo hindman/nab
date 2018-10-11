@@ -10,11 +10,8 @@ TODO
             ...
 
         class Range(Step):
-
             NAME = '...'
-
             DESC = '...'
-
             OPTS = [...]
 
             def begin(self, opts):
@@ -37,6 +34,34 @@ TODO
 
         - Provides a scope for step-writers to persist information.
 
+- Bug:
+
+    - This should (wr)ite twice and (pr)int once. But wr occurs just 1 time.
+
+    ll . | nab -a split '\s+' -a head 12 -a range 1 7 2 -a wr -a wr -a index 0 -a pr
+
+
+- Decompose the entire process into phases, each having hook points:
+
+    - Phases:
+
+        - prepare:
+            - Examples:
+                - File discovery.
+                - Even modify the list of steps (eg aln)
+
+        - begin:
+            - Each Step can configure itself.
+
+        - Running loop:
+
+            pre_file   # Before a path is opened.
+            run        # Line processing.
+            post_file  # After a file is closed.
+
+        - end:
+            - Print overall results.
+
 - Add support for file-begin file-end.
 
 - Add support for file-based output and in-place editing.
@@ -58,7 +83,6 @@ TODO
     filename
     linenumber
     tail
-    jsond
     dive
 
 - Also support leading-dot syntax:
@@ -66,8 +90,6 @@ TODO
     m .skip 1 .head 12 .findall '\d+' .str .nl
 
 - Switch PATHS to --paths?
-
-- Decide how to package the project.
 
 --------
 Misc notes
