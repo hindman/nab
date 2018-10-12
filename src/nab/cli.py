@@ -28,31 +28,31 @@ def main(args = None):
         exit(0)
 
     # Run BEGIN code. Although most begin hooks return nothing, it can return a
-    # dict. If this occurs, the hook's Action will be updated with the params
+    # dict. If this occurs, the hook's Step will be updated with the params
     # from that dict. This allow a begin hook to define its other hooks
     # dynamically (eg, see the run_begin() hook).
-    for i, a in enumerate(opts.actions):
+    for i, a in enumerate(opts.steps):
         if a.begin:
             d = a.begin(a.opts)
             if d:
                 ad = a._asdict()
                 ad.update(d)
-                opts.actions[i] = Action(*ad.values())
+                opts.steps[i] = StepTup(*ad.values())
 
     # Process lines.
     for ln in process_lines(opts):
         pass
 
     # Run END code.
-    for a in opts.actions:
+    for a in opts.steps:
         if a.end:
             a.end(a.opts)
 
 def print_help(opts):
-    msg = 'Usage: m [--help] ACTION... -- [PATH...]'
+    msg = 'Usage: m [--help] STEP... -- [PATH...]'
     print(msg)
-    print('\nActions:')
-    for aname in opts.valid_actions:
+    print('\nSteps:')
+    for aname in opts.valid_steps:
         print('  ' + aname)
 
 ####
@@ -64,9 +64,9 @@ def parse_args(orig_args):
     # Initialize the top-level Opts data structure.
     opts = Opts(
         help = False,
-        actions = [],
+        steps = [],
         paths = [],
-        valid_actions = get_known_actions(),
+        valid_steps = get_known_steps(),
     )
 
     # Handle --help (it can appear anywhere).
@@ -82,57 +82,58 @@ def parse_args(orig_args):
         opts.paths = args[i + 1:]
         args[i:] = []
 
-    # Get indexes of --action.
+    # Get indexes of --step.
     js = [
         i
         for i, a in enumerate(args)
-        if a in ('--action', '-a')
+        if a in ('--step', '-s')
     ]
 
     # Convert that list of a list of index pairs ready for use as a range.
     pairs = [(getitem(js, i), getitem(js, i + 1)) for i in range(len(js))]
 
-    # Split the args into a dict mapping each action name to its list of args.
+    # Split the args into a dict mapping each step name to its list of args.
     # TODO: do not use a dict; it prevents the use of a Step more than once
     # (eg wr_run).
-    action_args = {
+    step_args = {
         args[i + 1] : args[i + 2 : j]
         for i, j in pairs
     }
 
-    def create_action(aname, xs):
-        ad = get_action_def(aname)
+    def create_step(aname, xs):
+        ad = get_step_def(aname)
         ap = get_opt_parser(ad.configs, aname)
         d = vars(ap.parse_args(xs))
-        a = Action(aname, ap, Opts(**d), *ad)
+        a = StepTup(aname, ap, Opts(**d), *ad)
         return a
 
-    # Parse each actions options.
+    # Parse each steps options.
     autoline = False
-    for aname, xs in action_args.items():
+    for aname, xs in step_args.items():
 
         if aname == 'anl':
             autoline = True
             continue
 
-        if aname not in opts.valid_actions:
-            msg = 'Invalid action: {}'.format(aname)
+        if aname not in opts.valid_steps:
+            msg = 'Invalid step: {}'.format(aname)
             exit(2, msg)
 
-        a = create_action(aname, xs)
-        opts.actions.append(a)
+        a = create_step(aname, xs)
+        opts.steps.append(a)
 
-    # TODO: convert this to a proper action: anl_begin(). Do this
+    # TODO: convert this to a proper step: anl_begin(). Do this
     # by allowing a Step to declare itself to occur after all other _begin() work.
+    # TODO: on second thought, drop this anl Step; it is ill conceived.
     if autoline:
-        a1 = create_action('chomp', [])
-        a2 = create_action('nl', [])
-        opts.actions = [a1] + opts.actions + [a2]
+        a1 = create_step('chomp', [])
+        a2 = create_step('nl', [])
+        opts.steps = [a1] + opts.steps + [a2]
 
     return opts
 
 def get_opt_parser(configs, aname = None):
-    prog = '--action {}'.format(aname) if aname else None
+    prog = '--step {}'.format(aname) if aname else None
     ap = argparse.ArgumentParser(add_help = False, prog = prog)
     xs = []
     for obj in configs:
@@ -158,16 +159,16 @@ class Opts(object):
         return str(d)
 
 ####
-# Action discovery.
+# Step discovery.
 ####
 
-ACTION_DEF_ATTRS = ('configs', 'begin', 'run', 'end')
-ACTION_ATTRS = ('name', 'parser', 'opts') + ACTION_DEF_ATTRS
+STEP_DEF_ATTRS = ('configs', 'begin', 'run', 'end')
+STEP_ATTRS = ('name', 'parser', 'opts') + STEP_DEF_ATTRS
 
-ActionDef = collections.namedtuple('ActionDef', ACTION_DEF_ATTRS)
-Action = collections.namedtuple('Action', ACTION_ATTRS)
+StepDef = collections.namedtuple('StepDef', STEP_DEF_ATTRS)
+StepTup = collections.namedtuple('StepTup', STEP_ATTRS)
 
-def get_known_actions():
+def get_known_steps():
     U = '_'
     tups = [k.rsplit(U, 1) for k in globals() if U in k]
     return sorted(set(
@@ -175,9 +176,9 @@ def get_known_actions():
         if suffix in ('begin', 'run', 'end')
     ))
 
-def get_action_def(aname):
+def get_step_def(aname):
     d = globals()
-    return ActionDef(
+    return StepDef(
         d.get(aname + '_opts', []),
         d.get(aname + '_begin', None),
         d.get(aname + '_run', None),
@@ -190,12 +191,12 @@ def get_action_def(aname):
 
 def process_lines(opts):
     for ln in read_lines(opts):
-        for a in opts.actions:
+        for a in opts.steps:
             if a.run:
                 try:
                     ln.val = a.run(ln, a.opts)
                 except Exception:
-                    sys.stderr.write('Action error:\n')
+                    sys.stderr.write('Step error:\n')
                     sys.stderr.write('  path: {}\n'.format(ln.path))
                     sys.stderr.write('  overall_num: {}\n'.format(ln.overall_num))
                     sys.stderr.write('  line_num: {}\n'.format(ln.line_num))

@@ -6,10 +6,10 @@ import random
 import re
 
 ####
-# Actions.
+# Steps.
 ####
 
-# Action: pr and wr.
+# Step: pr and wr.
 
 def pr_run(ln, opts):
     if ln.val is not None:
@@ -21,7 +21,7 @@ def wr_run(ln, opts):
         print(ln.val, end = '')
     return ln.val
 
-# Action: strip.
+# Step: strip.
 
 strip_opts = [
     's',
@@ -32,7 +32,7 @@ def strip_run(ln, opts):
     ln.val = ln.val.strip(opts.s)
     return ln.val
 
-# Action: lstrip.
+# Step: lstrip.
 
 lstrip_opts = strip_opts
 
@@ -40,7 +40,7 @@ def lstrip_run(ln, opts):
     ln.val = ln.val.lstrip(opts.s)
     return ln.val
 
-# Action: lstrip.
+# Step: lstrip.
 
 rstrip_opts = strip_opts
 
@@ -48,13 +48,13 @@ def rstrip_run(ln, opts):
     ln.val = ln.val.rstrip(opts.s)
     return ln.val
 
-# Action: chomp.
+# Step: chomp.
 
 def chomp_run(ln, opts):
     ln.val = ln.val.rstrip('\n')
     return ln.val
 
-# Action: split.
+# Step: split.
 
 split_opts = [
     'rgx',
@@ -67,7 +67,7 @@ def split_begin(opts):
 def split_run(ln, opts):
     return opts.rgx.split(ln.val)
 
-# Action: index.
+# Step: index.
 
 index_opts = [
     'i',
@@ -85,7 +85,7 @@ def index_run(ln, opts):
         else:
             return None
 
-# Action: rindex.
+# Step: rindex.
 
 rindex_opts = index_opts
 
@@ -94,7 +94,7 @@ def rindex_begin(opts):
 
 rindex_run = index_run
 
-# Action: nl and anl.
+# Step: nl and anl.
 
 def anl_begin(ln, opts):
     pass
@@ -103,12 +103,12 @@ def nl_run(ln, opts):
     v = ln.val
     return v if v.endswith('\n') else v + '\n'
 
-# Action: cat.
+# Step: cat.
 
 def cat_run(ln, opts):
     return ln.val
 
-# Action: head.
+# Step: head.
 
 head_opts = [
     'n',
@@ -119,7 +119,7 @@ def head_run(ln, opts):
     if ln.line_num <= opts.n:
         return ln.val
 
-# Action: prefix.
+# Step: prefix.
 
 prefix_opts = [
     'pre',
@@ -129,7 +129,7 @@ prefix_opts = [
 def prefix_run(ln, opts):
     return opts.pre + ln.val
 
-# Action: suffix.
+# Step: suffix.
 
 suffix_opts = [
     'suff',
@@ -139,7 +139,7 @@ suffix_opts = [
 def suffix_run(ln, opts):
     return ln.val + opts.suff
 
-# Action: freq.
+# Step: freq.
 
 def freq_run(ln, opts):
     opts.freq[ln.val] += 1
@@ -152,7 +152,7 @@ def freq_end(opts):
         msg = '{}: {}'.format(k, opts.freq[k])
         print(msg)
 
-# Action: sum.
+# Step: sum.
 
 def sum_run(ln, opts):
     opts.sum += ln.val
@@ -163,17 +163,17 @@ def sum_begin(opts):
 def sum_end(opts):
     print(opts.sum)
 
-# Action: int.
+# Step: int.
 
 def int_run(ln, opts):
     return int(float(ln.val))
 
-# Action: float.
+# Step: float.
 
 def float_run(ln, opts):
     return float(ln.val)
 
-# Action: sub.
+# Step: sub.
 
 sub_opts = [
     'rgx',
@@ -197,7 +197,7 @@ def sub_begin(opts):
 def sub_run(ln, opts):
     return opts.rgx.sub(opts.repl, ln.val, count = opts.n)
 
-# Action: join.
+# Step: join.
 
 join_opts = [
     'j',
@@ -207,7 +207,7 @@ join_opts = [
 def join_run(ln, opts):
     return opts.j.join(ln.val)
 
-# Action: range.
+# Step: range.
 
 range_opts = [
     'i',
@@ -221,12 +221,12 @@ range_opts = [
 def range_run(ln, opts):
     return ln.val[opts.i : opts.j : opts.s]
 
-# Action: str.
+# Step: str.
 
 def str_run(ln, opts):
     return str(ln.val)
 
-# Action: skip.
+# Step: skip.
 
 skip_opts = [
     'n',
@@ -237,7 +237,7 @@ def skip_run(ln, opts):
     if ln.line_num > opts.n:
         return ln.val
 
-# Action: findall.
+# Step: findall.
 
 findall_opts = [
     'rgx',
@@ -250,7 +250,7 @@ def findall_begin(opts):
 def findall_run(ln, opts):
     return opts.rgx.findall(ln.val)
 
-# Action: run.
+# Step: run.
 
 run_opts = [
     'code',
@@ -263,7 +263,7 @@ def run_begin(opts):
     exec(code, globals())
     return dict(run = run_run)
 
-# Action: jsond.
+# Step: jsond.
 
 jsond_opts = [
     '-i',

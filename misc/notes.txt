@@ -2,7 +2,30 @@
 TODO
 --------
 
-- Refactor to use a class-based approach.
+Hooks:
+
+    - Parse CLI args.
+        - No need for hooks.
+
+    - FOO_begin():
+        - Each Step can configure itself.
+        - This includes the ability to define its other hooks dynamically.
+
+    - FOO_discover():
+        - A Step can return a new list of paths to be used.
+        - Can also return a list of pairs: (INPUT_PATH, OUTPUT_PATH).
+        - In that case, the output will go to separate files.
+        - And if the paths are equal, the original file will be overwritten.
+
+    - Running loop:
+        - FOO_file_begin() # Before a path is opened.
+        - FOO_run()        # Process one value.
+        - FOO_file_end()   # After a file is closed.
+
+    - FOO_end():
+        - Emit or persist overall results.
+
+Refactor to use a class-based approach.
 
     - Basic structure.
 
@@ -34,49 +57,21 @@ TODO
 
         - Provides a scope for step-writers to persist information.
 
-- Bug:
+Bug:
 
     - This should (wr)ite twice and (pr)int once. But wr occurs just 1 time.
+    - See TODO notes where the problem lies.
 
     ll . | nab -a split '\s+' -a head 12 -a range 1 7 2 -a wr -a wr -a index 0 -a pr
 
 
-- Decompose the entire process into phases, each having hook points:
+Step docs.
 
-    - Phases:
+Better --help: show step docs.
 
-        - prepare:
-            - Examples:
-                - File discovery.
-                - Even modify the list of steps (eg aln)
+Some tests.
 
-        - begin:
-            - Each Step can configure itself.
-
-        - Running loop:
-
-            pre_file   # Before a path is opened.
-            run        # Line processing.
-            post_file  # After a file is closed.
-
-        - end:
-            - Print overall results.
-
-- Add support for file-begin file-end.
-
-- Add support for file-based output and in-place editing.
-    - Currently, we can process multiple files as inputs.
-    - But the output is a single stream.
-    - We might want each input file to go to a separate output file.
-    - And we might want in-place editing.
-
-- Action docs.
-
-- Better --help: show step docs.
-
-- Some tests.
-
-- More steps:
+More steps:
     cols
     wrap
     flip-flop
@@ -85,11 +80,9 @@ TODO
     tail
     dive
 
-- Also support leading-dot syntax:
+Support leading-dot syntax:
 
     m .skip 1 .head 12 .findall '\d+' .str .nl
-
-- Switch PATHS to --paths?
 
 --------
 Misc notes
