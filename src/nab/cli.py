@@ -7,8 +7,9 @@ from __future__ import absolute_import, unicode_literals, print_function
 import argparse
 import sys
 import collections
+from inspect import getmembers, isclass
 
-from .core_steps import *   # TODO: fix.
+from . import core_steps
 from .step import Step
 from .version import __version__
 
@@ -26,6 +27,9 @@ def main(args = None):
     if opts.help:
         print_help(opts)
         exit(0)
+
+    print(opts)
+    return
 
     # Run BEGIN code. Although most begin hooks return nothing, it can return a
     # dict. If this occurs, the hook's Step will be updated with the params
@@ -100,35 +104,20 @@ def parse_args(orig_args):
         for i, j in pairs
     }
 
-    def create_step(aname, xs):
-        ad = get_step_def(aname)
-        ap = get_opt_parser(ad.configs, aname)
-        d = vars(ap.parse_args(xs))
-        a = StepTup(aname, ap, Opts(**d), *ad)
-        return a
 
     # Parse each steps options.
-    autoline = False
     for aname, xs in step_args.items():
 
-        if aname == 'anl':
-            autoline = True
-            continue
-
-        if aname not in opts.valid_steps:
+        if aname in opts.valid_steps:
+            cls = opts.valid_steps[aname]
+            s = cls()
+            ap = get_opt_parser(s.OPTS_CONFIG or [], aname)
+            d = vars(ap.parse_args(xs))
+            s.opts = Opts(**d)
+            opts.steps.append(s)
+        else:
             msg = 'Invalid step: {}'.format(aname)
             exit(2, msg)
-
-        a = create_step(aname, xs)
-        opts.steps.append(a)
-
-    # TODO: convert this to a proper step: anl_begin(). Do this
-    # by allowing a Step to declare itself to occur after all other _begin() work.
-    # TODO: on second thought, drop this anl Step; it is ill conceived.
-    if autoline:
-        a1 = create_step('chomp', [])
-        a2 = create_step('nl', [])
-        opts.steps = [a1] + opts.steps + [a2]
 
     return opts
 
@@ -162,28 +151,29 @@ class Opts(object):
 # Step discovery.
 ####
 
-STEP_DEF_ATTRS = ('configs', 'begin', 'run', 'end')
-STEP_ATTRS = ('name', 'parser', 'opts') + STEP_DEF_ATTRS
+# STEP_DEF_ATTRS = ('configs', 'begin', 'run', 'end')
+# STEP_ATTRS = ('name', 'parser', 'opts') + STEP_DEF_ATTRS
 
-StepDef = collections.namedtuple('StepDef', STEP_DEF_ATTRS)
-StepTup = collections.namedtuple('StepTup', STEP_ATTRS)
+# StepDef = collections.namedtuple('StepDef', STEP_DEF_ATTRS)
+# StepTup = collections.namedtuple('StepTup', STEP_ATTRS)
 
 def get_known_steps():
-    U = '_'
-    tups = [k.rsplit(U, 1) for k in globals() if U in k]
-    return sorted(set(
-        name for name, suffix in tups
-        if suffix in ('begin', 'run', 'end')
-    ))
+    return {
+        x.NAME or name.lower() : x
+        for name, x in getmembers(core_steps)
+        if isclass(x)
+        and issubclass(x, Step)
+        and x is not Step
+    }
 
-def get_step_def(aname):
-    d = globals()
-    return StepDef(
-        d.get(aname + '_opts', []),
-        d.get(aname + '_begin', None),
-        d.get(aname + '_run', None),
-        d.get(aname + '_end', None),
-    )
+# def get_step_def(aname):
+#     d = globals()
+#     return StepDef(
+#         d.get(aname + '_opts', []),
+#         d.get(aname + '_begin', None),
+#         d.get(aname + '_run', None),
+#         d.get(aname + '_end', None),
+#     )
 
 ####
 # Line processing.

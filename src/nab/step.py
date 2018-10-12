@@ -2,6 +2,10 @@ from __future__ import absolute_import, unicode_literals, print_function
 
 class Step(object):
 
+    NAME = None
+    DESC = None
+    OPTS_CONFIG = None
+
     def begin(self, opts):
         # The Step can configure itself -- including the ability
         # to define its other hooks dynamically.
