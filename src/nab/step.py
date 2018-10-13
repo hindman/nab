@@ -6,10 +6,11 @@ class Step(object):
     DESC = None
     OPTS_CONFIG = None
 
-    def __init__(self, sid, name, opts):
+    def __init__(self, sid, name, opts, ln):
         self.sid = sid
         self.name = name
         self.opts = opts
+        self.ln = ln
 
     def __str__(self):
         return repr(self)

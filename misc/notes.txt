@@ -2,26 +2,20 @@
 TODO
 --------
 
-Support file discovery and file-specific output:
-    - A Step can return a new list of paths to be used.
-    - Can also return a list of tuples: (INPUT_PATH, OUTPUT_PATH, OUTPUT_ERR_PATH).
-    - In that case, the output will go to separate files.
-    - And if the paths are equal, the original file will be overwritten.
-
+Support file discovery, file-specific output, and in-place editing:
     x Collect results from discover-hook calls.
-    - Convert to list of pairs for all cases.
+    x Convert to list of pairs for all cases.
+    - Adjust process_lines() to open output file handles as needed
     - Add util functions that Step code can use for printing/writing output to the correct handles.
     - Convert all print/write calls to those functions.
-    - Adjust process_lines() to set things up so that those functions work correctly.
 
 Some end-to-end tests.
     - Make sure all/most steps are working.
 
-Steps: stop passing opts when calling phase methods?
-
-Line: switch to immutable namedtuple.
-    - Do work in branch so that both approaches can be benchmarked.
-    - If namedtuple is slower, switch to property-based accessors in Line class.
+Information passing:
+    - Attach ln and opts to Step instances, pass as args, or both?
+    - Line as immutable namedtuple or global singleton?
+    - If singleton, use property-based accessors?
 
 Better --help: show step docs and Step.DESC.
 

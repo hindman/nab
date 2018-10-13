@@ -30,19 +30,24 @@ def main(args = None):
         exit(0)
 
     # Begin phase.
-    run_phase(opts.steps, 'begin')
+    execute_phase(opts.steps, 'begin')
 
     # Discover phase.
-    results = run_phase(opts.steps, 'discover')
+    results = execute_phase(opts.steps, 'discover')
     paths = list(filter(None, results))
     if paths:
         opts.paths = paths[-1]
+    opts.paths = (
+        [(STDIN, None, None)] if not opts.paths else
+        [(STDIN, None, None)] if opts.paths == ['-'] else
+        [p if isinstance(p, tuple) else (p, None, None) for p in opts.paths]
+    )
 
     # File-begin, run, and file-end phases.
     process_lines(opts)
 
     # End phase.
-    run_phase(opts.steps, 'end')
+    execute_phase(opts.steps, 'end')
 
 def print_help(opts):
     msg = 'Usage: m [--help] STEP... -- [PATH...]'
@@ -70,6 +75,7 @@ def parse_args(orig_args):
         steps = [],
         paths = [],
         valid_steps = get_known_steps(),
+        ln = Line(),
     )
 
     # Handle --help (it can appear anywhere).
@@ -116,7 +122,7 @@ def parse_args(orig_args):
             d = vars(ap.parse_args(xs))
             sopts = Opts(**d)
             # Create the instance and store it.
-            step = cls(sid = i + 1, name = sname, opts = sopts)
+            step = cls(sid = i + 1, name = sname, opts = sopts, ln = opts.ln)
             opts.steps.append(step)
         else:
             msg = 'Invalid step: {}'.format(sname)
@@ -163,44 +169,43 @@ class Opts(object):
 
 def process_lines(opts):
     # Setup.
-    ln = Line()
-    paths = (
-        [STDIN] if not opts.paths else
-        [STDIN] if opts.paths == ['-'] else
-        opts.paths
-    )
-    steps_with_run = [
-        s
-        for s in opts.steps
-        if step_has_phase(s, 'run')
-    ]
-    ERR_FMT = '\n'.join((
+    STEP_ERROR_FMT = '\n'.join((
         'Step error:',
-        '  path: {}',
+        '  input_path: {}',
+        '  outut_path: {}',
+        '  error_path: {}',
         '  overall_num: {}',
         '  line_num: {}',
         '  original_line: {!r}',
         '  val: {!r}',
         '',
     ))
+    steps_with_run = [
+        s
+        for s in opts.steps
+        if step_has_phase(s, 'run')
+    ]
+    ln = opts.ln
 
     # Process each input file.
-    for p in paths:
+    for ipath, opath, epath in opts.paths:
 
         # File-begin phase.
-        ln._set_path(p)
-        run_phase(opts.steps, 'file_begin', ln)
+        ln._set_path(ipath, opath, epath)
+        execute_phase(opts.steps, 'file_begin', ln)
 
         # Run phase.
-        with open_file(p) as fh:
+        with open_file(ipath) as fh:
             for line in fh:
                 ln._set_line(line)
                 for s in steps_with_run:
                     try:
                         ln.val = s.run(s.opts, ln)
                     except Exception:
-                        msg = ERR_FMT.format(
-                            ln.path,
+                        msg = STEP_ERROR_FMT.format(
+                            ln.input_path,
+                            ln.output_path,
+                            ln.error_path,
                             ln.overall_num,
                             ln.line_num,
                             ln.original_line,
@@ -212,8 +217,8 @@ def process_lines(opts):
                         break
 
         # File-end phase.
-        run_phase(opts.steps, 'file_end', ln)
-        ln._set_path(None)
+        execute_phase(opts.steps, 'file_end', ln)
+        ln._set_path(None, None, None)
 
 class Line(object):
     # A class to hold one line's worth of data as it travels
@@ -222,14 +227,18 @@ class Line(object):
     # as we go from file to file and line to line.
 
     def __init__(self):
-        self.path          = None
+        self.input_path    = None
+        self.output_path   = None
+        self.error_path    = None
         self.original_line = None
         self.val           = None
         self.line_num      = 0
         self.overall_num   = 0
 
-    def _set_path(self, path):
-        self.path          = path
+    def _set_path(self, ipath, opath, epath):
+        self.input_path    = ipath
+        self.output_path   = opath
+        self.error_path    = epath
         self.original_line = None
         self.val           = None
         self.line_num      = 0
@@ -280,11 +289,13 @@ def open_file(path):
         fh = sys.stdin
     else:
         fh = open(path)
-    yield fh
-    if path is not STDIN:
-        fh.close()
+    try:
+        yield fh
+    finally:
+        if path is not STDIN:
+            fh.close()
 
-def run_phase(steps, phase, *xs):
+def execute_phase(steps, phase, *xs):
     results = []
     for s in steps:
         if step_has_phase(s, phase):
