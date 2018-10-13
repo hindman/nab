@@ -6,6 +6,22 @@ class Step(object):
     DESC = None
     OPTS_CONFIG = None
 
+    def __init__(self, sid, name, opts):
+        self.sid = sid
+        self.name = name
+        self.opts = opts
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return '{}({}, {}, {})'.format(
+            self.__class__.__name__,
+            self.name,
+            self.sid,
+            self.opts,
+        )
+
     def begin(self, opts):
         # The Step can configure itself -- including the ability
         # to define its other hooks dynamically.

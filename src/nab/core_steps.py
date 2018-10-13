@@ -4,6 +4,7 @@ import collections
 import json
 import random
 import re
+import functools
 
 from .step import Step
 
@@ -252,15 +253,18 @@ class Sub(Step):
         dict(type = int, default = 0),
         '-f',
         dict(action = 'store_true'),
+        '-i',
+        dict(type = int, default = 4),
     ]
 
     def begin(self, opts):
         opts.rgx = re.compile(opts.rgx)
         if opts.f:
-            code = 'def repl(m):\n    {}'.format(opts.repl)
+            indent = ' ' * opts.i
+            code = 'def _repl(m):\n{}{}'.format(indent, opts.repl)
             d = {}
             exec(code, globals(), d)
-            opts.repl = d['repl']
+            opts.repl = d['_repl']
 
     def run(self, opts, ln):
         return opts.rgx.sub(opts.repl, ln.val, count = opts.n)
@@ -287,13 +291,18 @@ class Run(Step):
     OPTS_CONFIG = [
         'code',
         dict(),
+        '-i',
+        dict(type = int, default = 4),
     ]
 
     def begin(self, opts):
-        fmt = 'def run(ln, opts):\n   {}\n'
-        code = fmt.format(opts.code)
-        exec(code, globals())
-        return dict(run = run_run)
+        # Reference: https://stackoverflow.com/questions/972.
+        indent = ' ' * opts.i
+        fmt = 'def _run(self, opts, ln):\n{}{}\n'
+        code = fmt.format(indent, opts.code)
+        d = {}
+        exec(code, globals(), d)
+        self.run = functools.partial(d['_run'], self)
 
 ####
 # JSON dumping.

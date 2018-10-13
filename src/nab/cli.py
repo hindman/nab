@@ -4,10 +4,11 @@
 
 from __future__ import absolute_import, unicode_literals, print_function
 
-import argparse
-import sys
-import collections
+from contextlib import contextmanager
 from inspect import getmembers, isclass
+import argparse
+import collections
+import sys
 
 from . import core_steps
 from .step import Step
@@ -21,49 +22,47 @@ STDIN = 'STDIN'
 
 def main(args = None):
 
-    # Parse command-line arguments and handle --help.
+    # Parse command-line arguments.
     args = sys.argv[1:] if args is None else args
     opts = parse_args(args)
     if opts.help:
         print_help(opts)
         exit(0)
 
-    print(opts)
-    return
+    # Begin phase.
+    run_phase(opts.steps, 'begin')
 
-    # Run BEGIN code. Although most begin hooks return nothing, it can return a
-    # dict. If this occurs, the hook's Step will be updated with the params
-    # from that dict. This allow a begin hook to define its other hooks
-    # dynamically (eg, see the run_begin() hook).
-    for i, a in enumerate(opts.steps):
-        if a.begin:
-            d = a.begin(a.opts)
-            if d:
-                ad = a._asdict()
-                ad.update(d)
-                opts.steps[i] = StepTup(*ad.values())
+    # Discover phase.
+    results = run_phase(opts.steps, 'discover')
+    paths = list(filter(None, results))
+    if paths:
+        opts.paths = paths[-1]
 
-    # Process lines.
-    for ln in process_lines(opts):
-        pass
+    # File-begin, run, and file-end phases.
+    process_lines(opts)
 
-    # Run END code.
-    for a in opts.steps:
-        if a.end:
-            a.end(a.opts)
+    # End phase.
+    run_phase(opts.steps, 'end')
 
 def print_help(opts):
     msg = 'Usage: m [--help] STEP... -- [PATH...]'
     print(msg)
     print('\nSteps:')
-    for aname in opts.valid_steps:
-        print('  ' + aname)
+    for sname in opts.valid_steps:
+        print('  ' + sname)
 
 ####
 # CLI argument parsing.
 ####
 
 def parse_args(orig_args):
+    # Example:
+    #
+    #   CLI input = nab -s split '\s+' -s head 12 -s pr -- A B C
+    #   orig_args =     -s split '\s+' -s head 12 -s pr -- A B C
+    #   args      =     -s split '\s+' -s head 12 -s pr
+    #   indexes   =     0              3          6
+    #   pairs     =    (0, 3)         (3, 6)     (6, None)
 
     # Initialize the top-level Opts data structure.
     opts = Opts(
@@ -94,35 +93,39 @@ def parse_args(orig_args):
     ]
 
     # Convert that list of a list of index pairs ready for use as a range.
-    pairs = [(getitem(js, i), getitem(js, i + 1)) for i in range(len(js))]
+    pairs = [
+        (getitem(js, i), getitem(js, i + 1))
+        for i in range(len(js))
+    ]
 
-    # Split the args into a dict mapping each step name to its list of args.
-    # TODO: do not use a dict; it prevents the use of a Step more than once
-    # (eg wr_run).
-    step_args = {
-        args[i + 1] : args[i + 2 : j]
+    # Use those index pairs to disassemble the full list of args into
+    # a list of (STEP_NAME, STEP_ARGS) tuples.
+    step_args = [
+        (args[i + 1], args[i + 2 : j])
         for i, j in pairs
-    }
+    ]
 
-
-    # Parse each steps options.
-    for aname, xs in step_args.items():
-
-        if aname in opts.valid_steps:
-            cls = opts.valid_steps[aname]
-            s = cls()
-            ap = get_opt_parser(s.OPTS_CONFIG or [], aname)
+    # For each step, create an instance and parse its options.
+    # Add that instance to opts.steps.
+    for i, (sname, xs) in enumerate(step_args):
+        if sname in opts.valid_steps:
+            # Get the step class.
+            cls = opts.valid_steps[sname]
+            # Parse the step's args.
+            ap = get_opt_parser(cls.OPTS_CONFIG or [], sname)
             d = vars(ap.parse_args(xs))
-            s.opts = Opts(**d)
-            opts.steps.append(s)
+            sopts = Opts(**d)
+            # Create the instance and store it.
+            step = cls(sid = i + 1, name = sname, opts = sopts)
+            opts.steps.append(step)
         else:
-            msg = 'Invalid step: {}'.format(aname)
+            msg = 'Invalid step: {}'.format(sname)
             exit(2, msg)
 
     return opts
 
-def get_opt_parser(configs, aname = None):
-    prog = '--step {}'.format(aname) if aname else None
+def get_opt_parser(configs, sname = None):
+    prog = '--step {}'.format(sname) if sname else None
     ap = argparse.ArgumentParser(add_help = False, prog = prog)
     xs = []
     for obj in configs:
@@ -143,19 +146,103 @@ class Opts(object):
     def __getitem__(self, k):
         return getattr(self, k)
 
-    def __str__(self):
-        d = {k : v for k, v in vars(self).items() if k != '_parser'}
+    def __repr__(self):
+        d = {
+            k : v
+            for k, v in vars(self).items()
+            if k != '_parser'
+        }
         return str(d)
 
+    def __str__(self):
+        return repr(self)
+
 ####
-# Step discovery.
+# Line processing.
 ####
 
-# STEP_DEF_ATTRS = ('configs', 'begin', 'run', 'end')
-# STEP_ATTRS = ('name', 'parser', 'opts') + STEP_DEF_ATTRS
+def process_lines(opts):
+    # Setup.
+    ln = Line()
+    paths = (
+        [STDIN] if not opts.paths else
+        [STDIN] if opts.paths == ['-'] else
+        opts.paths
+    )
+    steps_with_run = [
+        s
+        for s in opts.steps
+        if step_has_phase(s, 'run')
+    ]
+    ERR_FMT = '\n'.join((
+        'Step error:',
+        '  path: {}',
+        '  overall_num: {}',
+        '  line_num: {}',
+        '  original_line: {!r}',
+        '  val: {!r}',
+        '',
+    ))
 
-# StepDef = collections.namedtuple('StepDef', STEP_DEF_ATTRS)
-# StepTup = collections.namedtuple('StepTup', STEP_ATTRS)
+    # Process each input file.
+    for p in paths:
+
+        # File-begin phase.
+        ln._set_path(p)
+        run_phase(opts.steps, 'file_begin', ln)
+
+        # Run phase.
+        with open_file(p) as fh:
+            for line in fh:
+                ln._set_line(line)
+                for s in steps_with_run:
+                    try:
+                        ln.val = s.run(s.opts, ln)
+                    except Exception:
+                        msg = ERR_FMT.format(
+                            ln.path,
+                            ln.overall_num,
+                            ln.line_num,
+                            ln.original_line,
+                            ln.val,
+                        )
+                        sys.stderr.write(msg)
+                        raise
+                    if ln.val is None:
+                        break
+
+        # File-end phase.
+        run_phase(opts.steps, 'file_end', ln)
+        ln._set_path(None)
+
+class Line(object):
+    # A class to hold one line's worth of data as it travels
+    # through the processing pipeline. The whole program uses
+    # a single Line instance and simply resets attributes
+    # as we go from file to file and line to line.
+
+    def __init__(self):
+        self.path          = None
+        self.original_line = None
+        self.val           = None
+        self.line_num      = 0
+        self.overall_num   = 0
+
+    def _set_path(self, path):
+        self.path          = path
+        self.original_line = None
+        self.val           = None
+        self.line_num      = 0
+
+    def _set_line(self, line):
+        self.original_line = line
+        self.val           = line
+        self.line_num      += 1
+        self.overall_num   += 1
+
+####
+# General helpers.
+####
 
 def get_known_steps():
     return {
@@ -166,77 +253,6 @@ def get_known_steps():
         and x is not Step
     }
 
-# def get_step_def(aname):
-#     d = globals()
-#     return StepDef(
-#         d.get(aname + '_opts', []),
-#         d.get(aname + '_begin', None),
-#         d.get(aname + '_run', None),
-#         d.get(aname + '_end', None),
-#     )
-
-####
-# Line processing.
-####
-
-def process_lines(opts):
-    for ln in read_lines(opts):
-        for a in opts.steps:
-            if a.run:
-                try:
-                    ln.val = a.run(ln, a.opts)
-                except Exception:
-                    sys.stderr.write('Step error:\n')
-                    sys.stderr.write('  path: {}\n'.format(ln.path))
-                    sys.stderr.write('  overall_num: {}\n'.format(ln.overall_num))
-                    sys.stderr.write('  line_num: {}\n'.format(ln.line_num))
-                    sys.stderr.write('  original_line: {!r}\n'.format(ln.original_line))
-                    sys.stderr.write('  val: {!r}\n'.format(ln.val))
-                    raise
-            if ln.val is None:
-                break
-        yield ln
-
-def read_lines(opts):
-    ln = Line()
-    if opts.paths and opts.paths != ['-']:
-        for p in opts.paths:
-            ln.set_path(p)
-            with open(p) as fh:
-                for line in fh:
-                    ln.set_line(line)
-                    yield ln
-    else:
-        ln.set_path(STDIN)
-        for line in sys.stdin:
-            ln.set_line(line)
-            yield ln
-
-class Line(object):
-    # A class to hold one line's worth of data as it travels
-    # through the processing pipeline.
-
-    def __init__(self):
-        self.path = None
-        self.original_line = None
-        self.val = None
-        self.line_num = 0
-        self.overall_num = 0
-
-    def set_path(self, path):
-        self.line_num = 0
-        self.path = path
-
-    def set_line(self, line):
-        self.line_num += 1
-        self.overall_num += 1
-        self.original_line = line
-        self.val = line
-
-####
-# General helpers.
-####
-
 def getitem(xs, i, default = None):
     try:
         return xs[i]
@@ -245,8 +261,37 @@ def getitem(xs, i, default = None):
 
 def exit(code, msg = None):
     fh = sys.stderr if code else sys.stdout
-    if msg:
+    if msg is not None:
         msg = msg if msg.endswith('\n') else msg + '\n'
         fh.write(msg)
     sys.exit(code)
+
+def step_has_phase(step, phase):
+    return (
+        phase in vars(step.__class__) or
+        phase in vars(step)
+    )
+
+@contextmanager
+def open_file(path):
+    # A context manager that allow code reading from either
+    # a file or STDIN to have the same structure.
+    if path is STDIN:
+        fh = sys.stdin
+    else:
+        fh = open(path)
+    yield fh
+    if path is not STDIN:
+        fh.close()
+
+def run_phase(steps, phase, *xs):
+    results = []
+    for s in steps:
+        if step_has_phase(s, phase):
+            f = getattr(s, phase)
+            r = f(s.opts, *xs)
+        else:
+            r = None
+        results.append(r)
+    return results
 

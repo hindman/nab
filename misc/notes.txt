@@ -2,76 +2,33 @@
 TODO
 --------
 
-Hooks:
+Support file discovery and file-specific output:
+    - A Step can return a new list of paths to be used.
+    - Can also return a list of tuples: (INPUT_PATH, OUTPUT_PATH, OUTPUT_ERR_PATH).
+    - In that case, the output will go to separate files.
+    - And if the paths are equal, the original file will be overwritten.
 
-    - Parse CLI args.
-        - No need for hooks.
+    x Collect results from discover-hook calls.
+    - Convert to list of pairs for all cases.
+    - Add util functions that Step code can use for printing/writing output to the correct handles.
+    - Convert all print/write calls to those functions.
+    - Adjust process_lines() to set things up so that those functions work correctly.
 
-    - FOO_begin():
-        - Each Step can configure itself.
-        - This includes the ability to define its other hooks dynamically.
+Some end-to-end tests.
+    - Make sure all/most steps are working.
 
-    - FOO_discover():
-        - A Step can return a new list of paths to be used.
-        - Can also return a list of pairs: (INPUT_PATH, OUTPUT_PATH).
-        - In that case, the output will go to separate files.
-        - And if the paths are equal, the original file will be overwritten.
+Steps: stop passing opts when calling phase methods?
 
-    - Running loop:
-        - FOO_file_begin() # Before a path is opened.
-        - FOO_run()        # Process one value.
-        - FOO_file_end()   # After a file is closed.
+Line: switch to immutable namedtuple.
+    - Do work in branch so that both approaches can be benchmarked.
+    - If namedtuple is slower, switch to property-based accessors in Line class.
 
-    - FOO_end():
-        - Emit or persist overall results.
+Better --help: show step docs and Step.DESC.
 
-Refactor to use a class-based approach.
+Support leading-dot syntax:
+    m .skip 1 .head 12 .findall '\d+' .str .nl
 
-    - Basic structure.
-
-        class Step(object):
-            ...
-
-        class Range(Step):
-            NAME = '...'
-            DESC = '...'
-            OPTS = [...]
-
-            def begin(self, opts):
-                ...
-
-            def run(self, ln, opts):
-                return ...
-
-            def end(self, opts):
-                ...
-
-    - Benefits:
-
-        - Some namespacing and code layout benefits: easier to define multiple
-        steps in one file.
-
-        - More extensible when adding new features.
-
-        - Steps can inherit from each other.
-
-        - Provides a scope for step-writers to persist information.
-
-Bug:
-
-    - This should (wr)ite twice and (pr)int once. But wr occurs just 1 time.
-    - See TODO notes where the problem lies.
-
-    ll . | nab -a split '\s+' -a head 12 -a range 1 7 2 -a wr -a wr -a index 0 -a pr
-
-
-Step docs.
-
-Better --help: show step docs.
-
-Some tests.
-
-More steps:
+Reassess existing steps and add more:
     cols
     wrap
     flip-flop
@@ -79,23 +36,7 @@ More steps:
     linenumber
     tail
     dive
+    cross
 
-Support leading-dot syntax:
-
-    m .skip 1 .head 12 .findall '\d+' .str .nl
-
---------
-Misc notes
---------
-
-Project name considered:
-
-    nab      | ####
-    ax       | .
-    pipework | .
-    psa      | Python, sed, awk.
-    rif      | Short for rifle.
-    riff     | Short for riffle.
-    saw      | .
-    yank     | .
+Check my scripts in $HOME/bin for behaviors not yet supported.
 
