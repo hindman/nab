@@ -23,12 +23,20 @@ class Step(object):
             self.opts,
         )
 
-    def begin(self, opts):
+    def out(self, *xs, **kws):
+        kws.setdefault('file', self.ln.output_fh)
+        print(*xs, **kws)
+
+    def err(self, *xs, **kws):
+        kws.setdefault('file', self.ln.error_fh)
+        print(*xs, **kws)
+
+    def begin(self, opts, ln):
         # The Step can configure itself -- including the ability
         # to define its other hooks dynamically.
         pass
 
-    def discover(self, opts):
+    def discover(self, opts, ln):
         # A Step can return a new list of paths to be used. It can be either a
         # list of INPUT_PATH or a list of (INPUT_PATH, OUTPUT_PATH) pairs. In
         # the latter case, the output will go to separate files rather than to
@@ -36,7 +44,7 @@ class Step(object):
         # file will be overwritten.
         pass
 
-    def file_begin(self, opts):
+    def file_begin(self, opts, ln):
         # Before a path is opened.
         pass
 
@@ -44,11 +52,11 @@ class Step(object):
         # Process one Line.
         pass
 
-    def file_end(self, opts):
+    def file_end(self, opts, ln):
         # After a file is closed.
         pass
 
-    def end():
+    def end(self, opts, ln):
         # Emit or persist overall results.
         pass
 

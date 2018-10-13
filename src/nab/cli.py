@@ -14,7 +14,11 @@ from . import core_steps
 from .step import Step
 from .version import __version__
 
+# TODO: fix: when strings are equal they also have same is-identity.
 STDIN = 'STDIN'
+STDOUT = 'STDOUT'
+STDERR = 'STDERR'
+STREAMS = (STDIN, STDOUT, STDERR)
 
 ####
 # Entry point.
@@ -34,14 +38,7 @@ def main(args = None):
 
     # Discover phase.
     results = execute_phase(opts.steps, 'discover')
-    paths = list(filter(None, results))
-    if paths:
-        opts.paths = paths[-1]
-    opts.paths = (
-        [(STDIN, None, None)] if not opts.paths else
-        [(STDIN, None, None)] if opts.paths == ['-'] else
-        [p if isinstance(p, tuple) else (p, None, None) for p in opts.paths]
-    )
+    opts.paths = get_path_tuples(opts.paths, results)
 
     # File-begin, run, and file-end phases.
     process_lines(opts)
@@ -190,13 +187,15 @@ def process_lines(opts):
     # Process each input file.
     for ipath, opath, epath in opts.paths:
 
-        # File-begin phase.
-        ln._set_path(ipath, opath, epath)
-        execute_phase(opts.steps, 'file_begin', ln)
-
         # Run phase.
-        with open_file(ipath) as fh:
-            for line in fh:
+        with open_files(ipath, opath, epath) as fhs:
+
+            # File-begin phase.
+            ifh, ofh, efh = fhs
+            ln._set_path(ipath, opath, epath, ifh, ofh, efh)
+            execute_phase(opts.steps, 'file_begin')
+
+            for line in ifh:
                 ln._set_line(line)
                 for s in steps_with_run:
                     try:
@@ -216,9 +215,9 @@ def process_lines(opts):
                     if ln.val is None:
                         break
 
-        # File-end phase.
-        execute_phase(opts.steps, 'file_end', ln)
-        ln._set_path(None, None, None)
+            # File-end phase.
+            execute_phase(opts.steps, 'file_end')
+            ln._set_path(None, None, None, None, None, None)
 
 class Line(object):
     # A class to hold one line's worth of data as it travels
@@ -230,15 +229,21 @@ class Line(object):
         self.input_path    = None
         self.output_path   = None
         self.error_path    = None
+        self.input_fh      = None
+        self.output_fh     = None
+        self.error_fh      = None
         self.original_line = None
         self.val           = None
         self.line_num      = 0
         self.overall_num   = 0
 
-    def _set_path(self, ipath, opath, epath):
+    def _set_path(self, ipath, opath, epath, ifh, ofh, efh):
         self.input_path    = ipath
         self.output_path   = opath
         self.error_path    = epath
+        self.input_fh      = ifh
+        self.output_fh     = ofh
+        self.error_fh      = efh
         self.original_line = None
         self.val           = None
         self.line_num      = 0
@@ -282,27 +287,57 @@ def step_has_phase(step, phase):
     )
 
 @contextmanager
-def open_file(path):
+def open_files(ipath, opath, epath):
     # A context manager that allow code reading from either
     # a file or STDIN to have the same structure.
-    if path is STDIN:
-        fh = sys.stdin
-    else:
-        fh = open(path)
+    ifh = open(ipath) if ipath else sys.stdin
+    ofh = open(opath) if opath else sys.stdout
+    efh = open(epath) if epath else sys.stderr
     try:
-        yield fh
+        yield (ifh, ofh, efh)
     finally:
-        if path is not STDIN:
-            fh.close()
+        if ipath is not None: ifh.close()
+        if opath is not None: ofh.close()
+        if epath is not None: efh.close()
 
-def execute_phase(steps, phase, *xs):
+def execute_phase(steps, phase):
     results = []
     for s in steps:
         if step_has_phase(s, phase):
             f = getattr(s, phase)
-            r = f(s.opts, *xs)
+            r = f(s.opts, s.ln)
         else:
             r = None
         results.append(r)
     return results
+
+def get_path_tuples(orig_paths, phase_results):
+    # First get the new paths, if any, returned by the discover phase.
+    # Then either use those or the original paths from the command line.
+    new_paths = list(filter(None, phase_results))
+    paths = new_paths[-1] if new_paths else orig_paths
+
+    # Handle STDIN-only use case.
+    if paths == ['-'] or not paths:
+        paths = [None]
+
+    # Convert that list of paths to 3-tuples.
+    return [path2tuple(p) for p in paths]
+
+def path2tuple(p):
+    # Wrap the path in a list, ensure 3 elements, and return as tuple.
+    if p is None or isinstance(p, str):
+        return (p, None, None)
+    else:
+        xs = list(p)
+        n = len(xs)
+        maxn = 3
+        if n > maxn:
+            msg = 'Path-tuple cannot have more than 3 element'
+            raise ValueError(msg)
+        elif n < maxn:
+            xs.extend([None, None, None])
+            return tuple(xs[0:maxn])
+        else:
+            return tuple(xs)
 

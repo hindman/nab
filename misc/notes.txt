@@ -2,20 +2,11 @@
 TODO
 --------
 
-Support file discovery, file-specific output, and in-place editing:
-    x Collect results from discover-hook calls.
-    x Convert to list of pairs for all cases.
-    - Adjust process_lines() to open output file handles as needed
-    - Add util functions that Step code can use for printing/writing output to the correct handles.
-    - Convert all print/write calls to those functions.
+Support in-place editing where input-path == output-path.
+    - Use temp file and then rename.
 
 Some end-to-end tests.
     - Make sure all/most steps are working.
-
-Information passing:
-    - Attach ln and opts to Step instances, pass as args, or both?
-    - Line as immutable namedtuple or global singleton?
-    - If singleton, use property-based accessors?
 
 Better --help: show step docs and Step.DESC.
 
@@ -33,4 +24,6 @@ Reassess existing steps and add more:
     cross
 
 Check my scripts in $HOME/bin for behaviors not yet supported.
+
+step_has_phase(): confirm that this is robust (eg inheritance).
 

@@ -16,14 +16,14 @@ class Pr(Step):
 
     def run(self, opts, ln):
         if ln.val is not None:
-            print(ln.val)
+            self.out(ln.val)
         return ln.val
 
 class Wr(Step):
 
     def run(self, opts, ln):
         if ln.val is not None:
-            print(ln.val, end = '')
+            self.out(ln.val, end = '')
         return ln.val
 
 ####
@@ -74,7 +74,7 @@ class Split(Step):
         dict(),
     ]
 
-    def begin(self, opts):
+    def begin(self, opts, ln):
         opts.rgx = re.compile(opts.rgx)
 
     def run(self, opts, ln):
@@ -114,7 +114,7 @@ class Index(Step):
 
 class RIndex(Index):
 
-    def begin(self, opts):
+    def begin(self, opts, ln):
         opts.i = - opts.i
 
 class Range(Index):
@@ -193,16 +193,16 @@ class Suffix(Step):
 
 class Freq(Step):
 
-    def begin(self, opts):
+    def begin(self, opts, ln):
         opts.freq = collections.Counter()
 
     def run(self, opts, ln):
         opts.freq[ln.val] += 1
 
-    def end(self, opts):
+    def end(self, opts, ln):
         for k in sorted(opts.freq):
             msg = '{}: {}'.format(k, opts.freq[k])
-            print(msg)
+            self.out(msg)
 
 ####
 # Sum.
@@ -210,14 +210,14 @@ class Freq(Step):
 
 class Sum(Step):
 
-    def begin(self, opts):
+    def begin(self, opts, ln):
         opts.sum = 0
 
     def run(self, opts, ln):
         opts.sum += ln.val
 
-    def end(self, opts):
-        print(opts.sum)
+    def end(self, opts, ln):
+        self.out(opts.sum)
 
 ####
 # Basic conversions: str, int, float.
@@ -257,7 +257,7 @@ class Sub(Step):
         dict(type = int, default = 4),
     ]
 
-    def begin(self, opts):
+    def begin(self, opts, ln):
         opts.rgx = re.compile(opts.rgx)
         if opts.f:
             indent = ' ' * opts.i
@@ -276,7 +276,7 @@ class FindAll(Step):
         dict(),
     ]
 
-    def begin(self, opts):
+    def begin(self, opts, ln):
         opts.rgx = re.compile(opts.rgx)
 
     def run(self, opts, ln):
@@ -295,7 +295,7 @@ class Run(Step):
         dict(type = int, default = 4),
     ]
 
-    def begin(self, opts):
+    def begin(self, opts, ln):
         # Reference: https://stackoverflow.com/questions/972.
         indent = ' ' * opts.i
         fmt = 'def _run(self, opts, ln):\n{}{}\n'
