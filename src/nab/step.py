@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 
+import sys
+
 class Step(object):
 
     NAME = None
@@ -24,11 +26,11 @@ class Step(object):
         )
 
     def out(self, *xs, **kws):
-        kws.setdefault('file', self.ln.output_fh)
+        kws.setdefault('file', self.ln.output_fh or sys.stdout)
         print(*xs, **kws)
 
     def err(self, *xs, **kws):
-        kws.setdefault('file', self.ln.error_fh)
+        kws.setdefault('file', self.ln.error_fh or sys.stderr)
         print(*xs, **kws)
 
     def begin(self, opts, ln):

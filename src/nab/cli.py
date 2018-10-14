@@ -14,12 +14,6 @@ from . import core_steps
 from .step import Step
 from .version import __version__
 
-# TODO: fix: when strings are equal they also have same is-identity.
-STDIN = 'STDIN'
-STDOUT = 'STDOUT'
-STDERR = 'STDERR'
-STREAMS = (STDIN, STDOUT, STDERR)
-
 ####
 # Entry point.
 ####
@@ -290,6 +284,18 @@ def step_has_phase(step, phase):
 def open_files(ipath, opath, epath):
     # A context manager that allow code reading from either
     # a file or STDIN to have the same structure.
+    #
+    # x   | stdin | stdout | stderr | f1 | f2 | f3
+    # --------------------------------------------
+    # in  | Y     | .      | .      | Y  | .  | .
+    # out | .     | Y      | .      | Y* | Y  | .
+    # err | .     | Y      | Y      | Y* | Y  | Y
+    #
+    # Where * means replace the input file.
+    #
+    ipath, ifh = ipath
+    opath, ofh = opath
+    epath, efh = epath
     ifh = open(ipath) if ipath else sys.stdin
     ofh = open(opath) if opath else sys.stdout
     efh = open(epath) if epath else sys.stderr
@@ -327,7 +333,7 @@ def get_path_tuples(orig_paths, phase_results):
 def path2tuple(p):
     # Wrap the path in a list, ensure 3 elements, and return as tuple.
     if p is None or isinstance(p, str):
-        return (p, None, None)
+        xs = [p, None, None]
     else:
         xs = list(p)
         n = len(xs)
@@ -336,8 +342,49 @@ def path2tuple(p):
             msg = 'Path-tuple cannot have more than 3 element'
             raise ValueError(msg)
         elif n < maxn:
-            xs.extend([None, None, None])
-            return tuple(xs[0:maxn])
+            xs.extend([None] * (maxn - n))
+    return tuple((x, None) for x in xs)
+
+
+class File(object):
+
+    STREAMS = {
+        'in':  ('STDIN',  sys.stdin),
+        'out': ('STDOUT', sys.stdout),
+        'err': ('STDERR', sys.stdout),
+    }
+
+    def __init__(self, stream, path = None, fh = None):
+        # Make sure the stream name is valid.
+        if stream in self.STREAMS:
+            self.stream = stream
         else:
-            return tuple(xs)
+            msg = 'Invalid stream name: {}'.format(stream)
+            raise ValueError(msg)
+        # Set other attributes.
+        if fh:
+            self.path = path
+            self.fh = fh
+            self.should_close = False
+        elif path:
+            self.path = path
+            self.fh = None
+            self.should_close = True
+        else:
+            path, fh = self.STREAMS[stream]
+            self.path = path
+            self.fh = fh
+            self.should_close = False
+
+    def open(self):
+        if not self.fh:
+            self.fh = open(self.path)
+
+    def close(self):
+        if self.fh and self.should_close:
+            self.fh.close()
+
+Stdin = File('in')
+Stdout = File('out')
+Stderr = File('err')
 

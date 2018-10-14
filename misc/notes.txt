@@ -5,6 +5,14 @@ TODO
 Support in-place editing where input-path == output-path.
     - Use temp file and then rename.
 
+    - How does a user supply some other file-like object?
+
+        [X, ...]
+
+        Where X can be: ipath | (Yi, Yo, Ye)
+
+        Where Y can be: path | (path, fh)
+
 Some end-to-end tests.
     - Make sure all/most steps are working.
 
