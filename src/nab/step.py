@@ -26,11 +26,11 @@ class Step(object):
         )
 
     def out(self, *xs, **kws):
-        kws.setdefault('file', self.ln.out.handle or sys.stdout)
+        kws.setdefault('file', getattr(self.ln.out, 'handle', None) or sys.stdout)
         print(*xs, **kws)
 
     def err(self, *xs, **kws):
-        kws.setdefault('file', self.ln.err.handle or sys.stderr)
+        kws.setdefault('file', getattr(self.ln.err, 'handle', None) or sys.stderr)
         print(*xs, **kws)
 
     def begin(self, opts, ln):
