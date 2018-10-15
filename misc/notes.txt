@@ -5,13 +5,7 @@ TODO
 Support in-place editing where input-path == output-path.
     - Use temp file and then rename.
 
-    - How does a user supply some other file-like object?
-
-        [X, ...]
-
-        Where X can be: ipath | (Yi, Yo, Ye)
-
-        Where Y can be: path | (path, fh)
+Support ability to import user-define Steps.
 
 Some end-to-end tests.
     - Make sure all/most steps are working.
@@ -33,5 +27,96 @@ Reassess existing steps and add more:
 
 Check my scripts in $HOME/bin for behaviors not yet supported.
 
+Support ability of user to control file-open mode.
+
 step_has_phase(): confirm that this is robust (eg inheritance).
+
+--------
+File notes
+--------
+
+How does a user supply some other file-like object?
+
+    [X, ...]
+
+    Where X can be: ipath | (Yi, Yo, Ye)
+
+    Where Y can be: path | (path, fh)
+
+
+Overview:
+
+    opts.fsets = list(FileSet)
+    FileSet      = namedtuple with inp, out, err FileHandle
+    FileHandle   = path, handle
+
+Returned by discover phase:
+
+    - Same as opts.fsets.
+    - Or allowed short forms.
+
+Short forms:
+
+    FileSet:
+        (inp, out, err) : fully explicit
+        (inp, out)      : use standard streams for missing args
+        (inp,)          : ditto
+        inp             : ditto
+        None            : ditto
+
+    FileHandle:
+        (path, None)    : regular file to be opened/closed
+        path            : ditto
+        None            : use standard stream
+        (None, None)    : ditto
+        (path, handle)  : fully explicit
+        (None, handle)  : not allowed
+        FileHandle      : same rules
+
+Relationships among file handles in a file set:
+
+    x   | stdin | stdout | stderr | f1  | f2 | f3
+    ---------------------------------------------
+    inp | Y     | .      | .      | Y1  | .  | .
+    out | .     | Y      | .      | Y3* | Y2 | .
+    err | .     | .      | Y      | Y6* | Y5 | Y4
+
+    Where * means replace the input file.
+
+    stdin
+        Y2
+            Y4 : stdin out       err
+            Y5 : stdin outErr
+            Y6 : stdin out       err
+        Y3
+            Y4 : stdin out       err
+            Y5 : stdin out       err
+            Y6 : stdin outErr
+
+        Summary: when inp is using a handle:
+            - Separate if out/err paths are the same.
+            - Else merged.
+
+    Y1
+        Y2
+            Y4 : inp out        err
+            Y5 : inp outErr
+            Y6 : inp out        err>In
+        Y3
+            Y4 : inp out!In     err
+            Y5 : inp out!In     err
+            Y6 : inp outErr!In
+
+        Summary: when inp using a file path:
+            - If out path not-equal to inp path:
+                - out is independent
+                - err can be the following:
+                    err
+                    outErr
+                    err!In
+            - Else:
+                - out!In
+                - err can be the following:
+                    err
+                    outErr!In
 

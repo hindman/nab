@@ -9,6 +9,8 @@ from inspect import getmembers, isclass
 import argparse
 import collections
 import sys
+import string
+import random
 
 from . import core_steps
 from .step import Step
@@ -31,8 +33,8 @@ def main(args = None):
     execute_phase(opts.steps, 'begin')
 
     # Discover phase.
-    results = execute_phase(opts.steps, 'discover')
-    opts.paths = get_path_tuples(opts.paths, results)
+    discover_results = execute_phase(opts.steps, 'discover')
+    opts.fsets = get_file_sets(opts.paths, discover_results)
 
     # File-begin, run, and file-end phases.
     process_lines(opts)
@@ -65,6 +67,7 @@ def parse_args(orig_args):
         help = False,
         steps = [],
         paths = [],
+        fsets = [],
         valid_steps = get_known_steps(),
         ln = Line(),
     )
@@ -162,12 +165,12 @@ def process_lines(opts):
     # Setup.
     STEP_ERROR_FMT = '\n'.join((
         'Step error:',
-        '  input_path: {}',
-        '  outut_path: {}',
-        '  error_path: {}',
+        '  inp: {}',
+        '  out: {}',
+        '  err: {}',
         '  overall_num: {}',
         '  line_num: {}',
-        '  original_line: {!r}',
+        '  orig: {!r}',
         '  val: {!r}',
         '',
     ))
@@ -179,29 +182,28 @@ def process_lines(opts):
     ln = opts.ln
 
     # Process each input file.
-    for ipath, opath, epath in opts.paths:
+    for fset in opts.fsets:
 
         # Run phase.
-        with open_files(ipath, opath, epath) as fhs:
+        with fset:
 
             # File-begin phase.
-            ifh, ofh, efh = fhs
-            ln._set_path(ipath, opath, epath, ifh, ofh, efh)
+            ln._set_path(fset.inp, fset.out, fset.err)
             execute_phase(opts.steps, 'file_begin')
 
-            for line in ifh:
+            for line in fset.inp.handle:
                 ln._set_line(line)
                 for s in steps_with_run:
                     try:
                         ln.val = s.run(s.opts, ln)
                     except Exception:
                         msg = STEP_ERROR_FMT.format(
-                            ln.input_path,
-                            ln.output_path,
-                            ln.error_path,
+                            ln.inp.path,
+                            ln.out.path,
+                            ln.err.path,
                             ln.overall_num,
                             ln.line_num,
-                            ln.original_line,
+                            ln.orig,
                             ln.val,
                         )
                         sys.stderr.write(msg)
@@ -211,42 +213,7 @@ def process_lines(opts):
 
             # File-end phase.
             execute_phase(opts.steps, 'file_end')
-            ln._set_path(None, None, None, None, None, None)
-
-class Line(object):
-    # A class to hold one line's worth of data as it travels
-    # through the processing pipeline. The whole program uses
-    # a single Line instance and simply resets attributes
-    # as we go from file to file and line to line.
-
-    def __init__(self):
-        self.input_path    = None
-        self.output_path   = None
-        self.error_path    = None
-        self.input_fh      = None
-        self.output_fh     = None
-        self.error_fh      = None
-        self.original_line = None
-        self.val           = None
-        self.line_num      = 0
-        self.overall_num   = 0
-
-    def _set_path(self, ipath, opath, epath, ifh, ofh, efh):
-        self.input_path    = ipath
-        self.output_path   = opath
-        self.error_path    = epath
-        self.input_fh      = ifh
-        self.output_fh     = ofh
-        self.error_fh      = efh
-        self.original_line = None
-        self.val           = None
-        self.line_num      = 0
-
-    def _set_line(self, line):
-        self.original_line = line
-        self.val           = line
-        self.line_num      += 1
-        self.overall_num   += 1
+            ln._unset_path()
 
 ####
 # General helpers.
@@ -280,32 +247,6 @@ def step_has_phase(step, phase):
         phase in vars(step)
     )
 
-@contextmanager
-def open_files(ipath, opath, epath):
-    # A context manager that allow code reading from either
-    # a file or STDIN to have the same structure.
-    #
-    # x   | stdin | stdout | stderr | f1 | f2 | f3
-    # --------------------------------------------
-    # in  | Y     | .      | .      | Y  | .  | .
-    # out | .     | Y      | .      | Y* | Y  | .
-    # err | .     | Y      | Y      | Y* | Y  | Y
-    #
-    # Where * means replace the input file.
-    #
-    ipath, ifh = ipath
-    opath, ofh = opath
-    epath, efh = epath
-    ifh = open(ipath) if ipath else sys.stdin
-    ofh = open(opath) if opath else sys.stdout
-    efh = open(epath) if epath else sys.stderr
-    try:
-        yield (ifh, ofh, efh)
-    finally:
-        if ipath is not None: ifh.close()
-        if opath is not None: ofh.close()
-        if epath is not None: efh.close()
-
 def execute_phase(steps, phase):
     results = []
     for s in steps:
@@ -317,10 +258,10 @@ def execute_phase(steps, phase):
         results.append(r)
     return results
 
-def get_path_tuples(orig_paths, phase_results):
+def get_file_sets(orig_paths, discover_results):
     # First get the new paths, if any, returned by the discover phase.
     # Then either use those or the original paths from the command line.
-    new_paths = list(filter(None, phase_results))
+    new_paths = list(filter(None, discover_results))
     paths = new_paths[-1] if new_paths else orig_paths
 
     # Handle STDIN-only use case.
@@ -328,63 +269,192 @@ def get_path_tuples(orig_paths, phase_results):
         paths = [None]
 
     # Convert that list of paths to 3-tuples.
-    return [path2tuple(p) for p in paths]
+    return [FileSet.new(p) for p in paths]
 
-def path2tuple(p):
-    # Wrap the path in a list, ensure 3 elements, and return as tuple.
-    if p is None or isinstance(p, str):
-        xs = [p, None, None]
+def padded_tuple(obj, padn):
+    # Wrap or convert to a tuple.
+    if obj is None or isinstance(obj, str):
+        xs = (obj,)
     else:
-        xs = list(p)
-        n = len(xs)
-        maxn = 3
-        if n > maxn:
-            msg = 'Path-tuple cannot have more than 3 element'
-            raise ValueError(msg)
-        elif n < maxn:
-            xs.extend([None] * (maxn - n))
-    return tuple((x, None) for x in xs)
+        xs = tuple(obj)
+    # Pad to desired length.
+    n = len(xs)
+    if n == padn:
+        return xs
+    elif n < padn:
+        return xs + (None,) * (padn - n)
+    else:
+        raise ValueError('tuple too large')
 
+class FileSet(object):
 
-class File(object):
+    @classmethod
+    def new(cls, obj):
+        xs = padded_tuple(obj, 3)
+        return FileSet(*xs)
+
+    def __init__(self, inp, out = None, err = None):
+        self.inp = FileHandle.new('inp', inp)
+        self.out = FileHandle.new('out', out)
+        self.err = FileHandle.new('err', err)
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return '{}({!r}, {!r}, {!r})'.format(
+            self.__class__.__name__,
+            self.inp.path,
+            self.out.path,
+            self.err.path,
+        )
+
+    def __enter__(self):
+
+        for fh in (self.inp, self.out, self.err):
+            if not fh.handle:
+                fh.handle = open(fh.path, fh.mode)
+        return
+
+        def setit(fh, fh2 = None, temp = True):
+            if fh2:
+                fh.handle = fh2.handle
+            elif temp:
+                fh.temp_path = temp_file_path()
+                fh.handle = open(fh.temp_path, fh.mode)
+            else:
+                fh.handle = open(fh.path, fh.mode)
+
+        # TODO.
+
+        ifh = self.inp
+        ofh = self.out
+        efh = self.err
+
+        if ifh.handle:
+            if ofh.handle:
+                if efh.handle:
+                    pass
+                else:
+                    setit(efh)
+            else:
+                setit(ofh)
+                if efh.handle:
+                    pass
+                else:
+                    if efh.path == ofh.path:
+                        setit(efh, fh2 = ofh)
+                    else:
+                        setit(efh)
+        else:
+            setit(ifh)
+            if ofh.handle:
+                if efh.handle:
+                    pass
+                else:
+                    if efh.path == ifh.path:
+                        setit(efh, temp = True)
+                    else:
+                        setit(efh)
+            else:
+                if ofh.path == ifh.path:
+                    setit(ofh, temp = True)
+                else:
+                    setit(ofh)
+                if efh.handle:
+                    pass
+                else:
+                    if efh.path == ofh.path:
+                        setit(efh, fh2 = ofh)
+                    elif efh.path == ifh.path:
+                        setit(efh, temp = True)
+                    else:
+                        setit(efh)
+
+    def __exit__(self, *xs):
+        for fh in (self.inp, self.out, self.err):
+            if fh.should_close:
+                fh.handle.close()
+
+def temp_file_path(n = 15):
+    suffix = ''.join(random.choices(string.ascii_lowercase, k = n))
+    return '/tmp/nab-' + suffix
+
+class FileHandle(object):
 
     STREAMS = {
-        'in':  ('STDIN',  sys.stdin),
-        'out': ('STDOUT', sys.stdout),
-        'err': ('STDERR', sys.stdout),
+        'inp': ('/STDIN', sys.stdin, 'r'),
+        'out': ('/STDOUT', sys.stdout, 'w'),
+        'err': ('/STDERR', sys.stdout, 'w'),
     }
 
-    def __init__(self, stream, path = None, fh = None):
-        # Make sure the stream name is valid.
-        if stream in self.STREAMS:
-            self.stream = stream
+    @classmethod
+    def new(cls, stream, obj):
+        if stream in cls.STREAMS:
+            path, handle = padded_tuple(obj, 2)
+            mode = cls.STREAMS[stream][2]
+            return (
+                FileHandle(path, handle, mode) if (handle or path) else
+                FileHandle(path, None, mode) if path else
+                FileHandle(*cls.STREAMS[stream])
+            )
         else:
-            msg = 'Invalid stream name: {}'.format(stream)
-            raise ValueError(msg)
-        # Set other attributes.
-        if fh:
-            self.path = path
-            self.fh = fh
-            self.should_close = False
-        elif path:
-            self.path = path
-            self.fh = None
-            self.should_close = True
-        else:
-            path, fh = self.STREAMS[stream]
-            self.path = path
-            self.fh = fh
-            self.should_close = False
+            raise ValueError('Invalid stream: {}'.format(stream))
 
-    def open(self):
-        if not self.fh:
-            self.fh = open(self.path)
+    def __init__(self, path, handle = None, mode = None):
+        if not path:
+            raise ValueError('FileHandle.path is required')
+        self.path = path
+        self.handle = handle
+        self.mode = mode
+        self.should_close = not handle
+        self.temp_path = None
 
-    def close(self):
-        if self.fh and self.should_close:
-            self.fh.close()
+    def __str__(self):
+        return repr(self)
 
-Stdin = File('in')
-Stdout = File('out')
-Stderr = File('err')
+    def __repr__(self):
+        return '{}({!r})'.format(
+            self.__class__.__name__,
+            self.path,
+        )
+
+class Line(object):
+    # A class to hold one line's worth of data as it travels
+    # through the processing pipeline. The whole program uses
+    # a single Line instance and simply resets attributes
+    # as we go from file to file and line to line.
+
+    def __init__(self):
+        self.inp = None
+        self.out = None
+        self.err = None
+        self.orig = None
+        self.val = None
+        self.line_num = 0
+        self.overall_num = 0
+        self.file_num = 0
+
+    def _set_path(self, inp, out, err):
+        self.inp = inp
+        self.out = out
+        self.err = err
+        self.orig = None
+        self.val = None
+        self.line_num = 0
+        self.file_num += 1
+
+    def _unset_path(self):
+        self.inp = None
+        self.out = None
+        self.err = None
+        self.orig = None
+        self.val = None
+        self.line_num = 0
+
+    def _set_line(self, line):
+        self.orig = line
+        self.val = line
+        self.line_num += 1
+        self.overall_num += 1
 
