@@ -2,13 +2,9 @@
 TODO
 --------
 
-Support in-place editing where input-path == output-path.
-    - Use temp file and then rename.
-
 Support ability to import user-define Steps.
 
-Some end-to-end tests.
-    - Make sure all/most steps are working.
+Some end-to-end tests to exercise most behavior.
 
 Better --help: show step docs and Step.DESC.
 
@@ -75,48 +71,11 @@ Short forms:
 
 Relationships among file handles in a file set:
 
-    x   | stdin | stdout | stderr | f1  | f2 | f3
+    x   | stdin | stdout | stderr | f1  | f2  | f3
     ---------------------------------------------
-    inp | Y     | .      | .      | Y1  | .  | .
-    out | .     | Y      | .      | Y3* | Y2 | .
-    err | .     | .      | Y      | Y6* | Y5 | Y4
+    inp | Y     | .      | .      | Y1  | .   | .
+    out | .     | Y      | .      | Y3* | Y2  | .
+    err | .     | .      | Y      | Y6* | Y5* | Y4
 
     Where * means replace the input file.
-
-    stdin
-        Y2
-            Y4 : stdin out       err
-            Y5 : stdin outErr
-            Y6 : stdin out       err
-        Y3
-            Y4 : stdin out       err
-            Y5 : stdin out       err
-            Y6 : stdin outErr
-
-        Summary: when inp is using a handle:
-            - Separate if out/err paths are the same.
-            - Else merged.
-
-    Y1
-        Y2
-            Y4 : inp out        err
-            Y5 : inp outErr
-            Y6 : inp out        err>In
-        Y3
-            Y4 : inp out!In     err
-            Y5 : inp out!In     err
-            Y6 : inp outErr!In
-
-        Summary: when inp using a file path:
-            - If out path not-equal to inp path:
-                - out is independent
-                - err can be the following:
-                    err
-                    outErr
-                    err!In
-            - Else:
-                - out!In
-                - err can be the following:
-                    err
-                    outErr!In
 

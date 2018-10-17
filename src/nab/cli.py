@@ -288,15 +288,37 @@ def padded_tuple(obj, padn):
 
 class FileSet(object):
 
+    INP = 'inp'
+    OUT = 'out'
+    ERR = 'err'
+
+    STREAMS = {
+        INP: (':STDIN:', sys.stdin, 'r'),
+        OUT: (':STDOUT:', sys.stdout, 'w'),
+        ERR: (':STDERR:', sys.stdout, 'w'),
+    }
+
+    def new_fh(self, stream, obj):
+        if stream in self.STREAMS:
+            path, handle = padded_tuple(obj, 2)
+            mode = self.STREAMS[stream][2]
+            return (
+                FileHandle(path, handle, mode) if (handle or path) else
+                FileHandle(path, None, mode) if path else
+                FileHandle(*self.STREAMS[stream])
+            )
+        else:
+            raise ValueError('Invalid stream: {}'.format(stream))
+
     @classmethod
     def new(cls, obj):
         xs = padded_tuple(obj, 3)
         return FileSet(*xs)
 
     def __init__(self, inp, out = None, err = None):
-        self.inp = FileHandle.new('inp', inp)
-        self.out = FileHandle.new('out', out)
-        self.err = FileHandle.new('err', err)
+        self.inp = self.new_fh(self.INP, inp)
+        self.out = self.new_fh(self.OUT, out)
+        self.err = self.new_fh(self.ERR, err)
 
     def __str__(self):
         return repr(self)
@@ -311,95 +333,66 @@ class FileSet(object):
 
     def __enter__(self):
 
-        for fh in (self.inp, self.out, self.err):
-            if not fh.handle:
-                fh.handle = open(fh.path, fh.mode)
-        return
+        # For input, output, and error, open files for either reading or
+        # or writing -- unless the user already supplied file handles.
 
-        def setit(fh, fh2 = None, temp = True):
-            if fh2:
-                fh.handle = fh2.handle
-            elif temp:
-                fh.temp_path = temp_file_path()
-                fh.handle = open(fh.temp_path, fh.mode)
-            else:
-                fh.handle = open(fh.path, fh.mode)
-
-        # TODO.
-
+        # Convenience vars for the FileHandle instances.
         ifh = self.inp
         ofh = self.out
         efh = self.err
 
-        if ifh.handle:
-            if ofh.handle:
-                if efh.handle:
-                    pass
-                else:
-                    setit(efh)
+        # Whether the user supplied an opened handle for them.
+        ib, ob, eb = [bool(fh.handle) for fh in (ifh, ofh, efh)]
+
+        # Input.
+        if not ib:
+            # Just open the file.
+            self.open_fh(ifh)
+
+        # Output.
+        if not ob:
+            # Open either the file or a temp file -- the latter
+            # if the input/output paths are the same.
+            self.open_or_temp(ofh, ifh)
+
+        # Error.
+        if not eb:
+            if not ob:
+                # If we had to open an output file (above), either open the
+                # error file or reuse the output handle -- the latter if
+                # output/error paths are the same.
+                self.open_or_reuse(efh, ofh)
             else:
-                setit(ofh)
-                if efh.handle:
-                    pass
-                else:
-                    if efh.path == ofh.path:
-                        setit(efh, fh2 = ofh)
-                    else:
-                        setit(efh)
-        else:
-            setit(ifh)
-            if ofh.handle:
-                if efh.handle:
-                    pass
-                else:
-                    if efh.path == ifh.path:
-                        setit(efh, temp = True)
-                    else:
-                        setit(efh)
-            else:
-                if ofh.path == ifh.path:
-                    setit(ofh, temp = True)
-                else:
-                    setit(ofh)
-                if efh.handle:
-                    pass
-                else:
-                    if efh.path == ofh.path:
-                        setit(efh, fh2 = ofh)
-                    elif efh.path == ifh.path:
-                        setit(efh, temp = True)
-                    else:
-                        setit(efh)
+                # Open either the file or a temp file -- the latter
+                # if the input/error paths are the same.
+                self.open_or_temp(efh, ifh)
 
     def __exit__(self, *xs):
         for fh in (self.inp, self.out, self.err):
             if fh.should_close:
                 fh.handle.close()
 
+    def open_fh(self, fh, path = None):
+        fh.handle = open(path or fh.path, fh.mode)
+
+    def open_or_reuse(self, fh, other):
+        if fh.path == other.path:
+            fh.handle = other.handle
+        else:
+            self.open_fh(self, fh)
+
+    def open_or_temp(self, fh, other):
+        if fh.path == other.path:
+            fh.temp_path = temp_file_path()
+            self.open_fh(fh, path = fh.temp_path)
+        else:
+            self.open_fh(fh)
+
 def temp_file_path(n = 15):
     suffix = ''.join(random.choices(string.ascii_lowercase, k = n))
     return '/tmp/nab-' + suffix
 
 class FileHandle(object):
-
-    STREAMS = {
-        'inp': ('/STDIN', sys.stdin, 'r'),
-        'out': ('/STDOUT', sys.stdout, 'w'),
-        'err': ('/STDERR', sys.stdout, 'w'),
-    }
-
-    @classmethod
-    def new(cls, stream, obj):
-        if stream in cls.STREAMS:
-            path, handle = padded_tuple(obj, 2)
-            mode = cls.STREAMS[stream][2]
-            return (
-                FileHandle(path, handle, mode) if (handle or path) else
-                FileHandle(path, None, mode) if path else
-                FileHandle(*cls.STREAMS[stream])
-            )
-        else:
-            raise ValueError('Invalid stream: {}'.format(stream))
 
     def __init__(self, path, handle = None, mode = None):
         if not path:
