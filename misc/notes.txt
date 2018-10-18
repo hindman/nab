@@ -3,6 +3,42 @@ TODO
 --------
 
 Support ability to import user-define Steps.
+    misc/custom_steps.py
+
+    NAB_STEP_MODULES = one or more paths to Python modules, colon separated
+
+Add a helper function:
+    - Include in Step?
+    - Include in a Mixin?
+    - Include in a helpers.py module and then both core_steps.py and
+      any custom user step modules would import from that?
+
+    - getitem():
+        def getitem(xs, i):
+            # Get item that returns None on bad key/index.
+            try:
+                return xs[i]
+            except (IndexError, KeyError):
+                return None
+
+    - iff():
+
+        - Not sure if this really helps.
+        - If shaves off just a few characters.
+
+        # Function.
+        def iff(pred, t = True, f = None):
+            return t if pred else f
+
+        # Method on Step.
+        def iff(self, pred, t = None, f = None):
+            t = self.ln.val if t is None else t
+            return t if pred else f
+
+        # Usages:
+        Python:   return ln.val if ln.val > 100 else None
+        Function: return iff(ln.val > 100, ln.val)
+        Method:   return self.iff(ln.val > 100)
 
 Some end-to-end tests to exercise most behavior.
 
@@ -12,14 +48,20 @@ Support leading-dot syntax:
     m .skip 1 .head 12 .findall '\d+' .str .nl
 
 Reassess existing steps and add more:
+    count
     cols
     wrap
-    flip-flop
     filename
     linenumber
     tail
     dive
     cross
+
+Run():
+    - Confirm can support indented input.
+    - Confirm multiple `-s run` can be used in the same execution.
+    - Add support for other phases: discover, file_begin, file_end, end.
+    - And the run code arg itself should be optional.
 
 Check my scripts in $HOME/bin for behaviors not yet supported.
 

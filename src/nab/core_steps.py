@@ -71,14 +71,17 @@ class Split(Step):
 
     OPTS_CONFIG = [
         'rgx',
-        dict(),
+        dict(nargs = '?'),
     ]
 
     def begin(self, opts, ln):
-        opts.rgx = re.compile(opts.rgx)
+        opts.rgx = re.compile(opts.rgx) if opts.rgx else None
 
     def run(self, opts, ln):
-        return opts.rgx.split(ln.val)
+        if opts.rgx:
+            return opts.rgx.split(ln.val)
+        else:
+            return ln.val.split()
 
 class Join(Step):
 
@@ -223,7 +226,7 @@ class Sum(Step):
 # Basic conversions: str, int, float.
 ####
 
-class Int(Step):
+class Str(Step):
 
     def run(self, opts, ln):
         return str(ln.val)
@@ -239,7 +242,7 @@ class Float(Step):
         return float(ln.val)
 
 ####
-# Regex substitution and findall.
+# Regex substitution, searching, grepping, and findall.
 ####
 
 class Sub(Step):
@@ -268,6 +271,56 @@ class Sub(Step):
 
     def run(self, opts, ln):
         return opts.rgx.sub(opts.repl, ln.val, count = opts.n)
+
+class Search(Step):
+
+    OPTS_CONFIG = [
+        'rgx',
+        dict(),
+        '-g',
+        dict(type = int, default = 0),
+        '-a',
+        dict(action = 'store_true'),
+    ]
+
+    def begin(self, opts, ln):
+        opts.rgx = re.compile(opts.rgx)
+
+    def run(self, opts, ln):
+        m = opts.rgx.search(ln.val)
+        if m:
+            if opts.a:
+                return m.groups()
+            else:
+                return m.group(opts.g)
+
+class Grep(Step):
+
+    OPTS_CONFIG = [
+        'rgx',
+        dict(),
+        '-i',
+        dict(action = 'store_true'),
+        '-v',
+        dict(action = 'store_true'),
+        '-s',
+        dict(action = 'store_true'),
+    ]
+
+    def begin(self, opts, ln):
+        if not opts.s:
+            f = re.IGNORECASE if opts.i else 0
+            opts.rgx = re.compile(opts.rgx, flags = f)
+
+    def run(self, opts, ln):
+        if opts.s:
+            if opts.i:
+                m = opts.rgx.lower() in ln.val.lower()
+            else:
+                m = opts.rgx in ln.val
+        else:
+            m = bool(opts.rgx.search(ln.val))
+        return None if m == opts.v else ln.val
 
 class FindAll(Step):
 
