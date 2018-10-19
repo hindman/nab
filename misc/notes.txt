@@ -2,60 +2,36 @@
 TODO
 --------
 
-Support ability to import user-define Steps.
-    misc/custom_steps.py
-
-    NAB_STEP_MODULES = one or more paths to Python modules, colon separated
-
-Add a helper function:
-    - Include in Step?
-    - Include in a Mixin?
-    - Include in a helpers.py module and then both core_steps.py and
-      any custom user step modules would import from that?
-
-    - getitem():
-        def getitem(xs, i):
-            # Get item that returns None on bad key/index.
-            try:
-                return xs[i]
-            except (IndexError, KeyError):
-                return None
-
-    - iff():
-
-        - Not sure if this really helps.
-        - If shaves off just a few characters.
-
-        # Function.
-        def iff(pred, t = True, f = None):
-            return t if pred else f
-
-        # Method on Step.
-        def iff(self, pred, t = None, f = None):
-            t = self.ln.val if t is None else t
-            return t if pred else f
-
-        # Usages:
-        Python:   return ln.val if ln.val > 100 else None
-        Function: return iff(ln.val > 100, ln.val)
-        Method:   return self.iff(ln.val > 100)
-
 Some end-to-end tests to exercise most behavior.
 
-Better --help: show step docs and Step.DESC.
+Improve existing steps:
+    - Add help text.
+    - Assess option naming conventions.
+    - Assess step names.
+
+Better --help:
+    - Show step docs.
+    - Show Step.DESC.
+    - Support Step.GROUPS.
 
 Support leading-dot syntax:
     m .skip 1 .head 12 .findall '\d+' .str .nl
 
-Reassess existing steps and add more:
-    count
-    cols
-    wrap
-    filename
-    linenumber
-    tail
-    dive
-    cross
+Add more steps:
+    - Improve:
+        - flipflop : see comments
+        - Assess current options; add other features.
+    - Add more steps:
+        - count
+        - cols
+        - wrap
+        - filename
+        - linenumber
+        - tail
+        - dive
+        - cross
+    - Check $HOME/bin scripts for ideas.
+    - Check MPC scripts for ideas.
 
 Run():
     - Confirm can support indented input.
@@ -63,61 +39,7 @@ Run():
     - Add support for other phases: discover, file_begin, file_end, end.
     - And the run code arg itself should be optional.
 
-Check my scripts in $HOME/bin for behaviors not yet supported.
-
-Support ability of user to control file-open mode.
-
 step_has_phase(): confirm that this is robust (eg inheritance).
 
---------
-File notes
---------
-
-How does a user supply some other file-like object?
-
-    [X, ...]
-
-    Where X can be: ipath | (Yi, Yo, Ye)
-
-    Where Y can be: path | (path, fh)
-
-
-Overview:
-
-    opts.fsets = list(FileSet)
-    FileSet      = namedtuple with inp, out, err FileHandle
-    FileHandle   = path, handle
-
-Returned by discover phase:
-
-    - Same as opts.fsets.
-    - Or allowed short forms.
-
-Short forms:
-
-    FileSet:
-        (inp, out, err) : fully explicit
-        (inp, out)      : use standard streams for missing args
-        (inp,)          : ditto
-        inp             : ditto
-        None            : ditto
-
-    FileHandle:
-        (path, None)    : regular file to be opened/closed
-        path            : ditto
-        None            : use standard stream
-        (None, None)    : ditto
-        (path, handle)  : fully explicit
-        (None, handle)  : not allowed
-        FileHandle      : same rules
-
-Relationships among file handles in a file set:
-
-    x   | stdin | stdout | stderr | f1  | f2  | f3
-    ---------------------------------------------
-    inp | Y     | .      | .      | Y1  | .   | .
-    out | .     | Y      | .      | Y3* | Y2  | .
-    err | .     | .      | Y      | Y6* | Y5* | Y4
-
-    Where * means replace the input file.
+Support ability of user to control file-open mode.
 

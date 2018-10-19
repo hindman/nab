@@ -4,16 +4,24 @@
 
 from __future__ import absolute_import, unicode_literals, print_function
 
-from contextlib import contextmanager
 from inspect import getmembers, isclass
 import argparse
 import collections
-import sys
-import string
+import os
 import random
+import string
+import sys
+
+if sys.version_info >= (3, 5):
+    from importlib.util import spec_from_file_location, module_from_spec
+elif sys.version_info >= (3, 3):
+    from importlib.machinery import SourceFileLoader
+else:
+    from imp import load_source
 
 from . import core_steps
 from .step import Step
+from .helpers import getitem
 from .version import __version__
 
 ####
@@ -220,19 +228,39 @@ def process_lines(opts):
 ####
 
 def get_known_steps():
+    mods = [core_steps] + get_user_step_modules()
     return {
         x.NAME or name.lower() : x
-        for name, x in getmembers(core_steps)
+        for m in mods
+        for name, x in getmembers(m)
         if isclass(x)
         and issubclass(x, Step)
         and x is not Step
     }
 
-def getitem(xs, i, default = None):
-    try:
-        return xs[i]
-    except Exception:
-        return default
+def get_user_step_modules():
+    s = os.environ.get('NAB_MODULES', None)
+    if s:
+        return [
+            import_from_path(p)
+            for p in s.split(os.pathsep)
+            if os.path.isfile(p)
+        ]
+    else:
+        return []
+
+def import_from_path(path):
+    # Takes a string file path. Returns the imported module.
+    name = os.path.basename(os.path.splitext(path)[0])
+    if sys.version_info >= (3,5):
+        spec = spec_from_file_location(name, path)
+        m = module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+    elif sys.version_info >= (3,3):
+        return SourceFileLoader(name, path).load_module()
+    else:
+        return load_source(name, path)
 
 def exit(code, msg = None):
     fh = sys.stderr if code else sys.stdout
