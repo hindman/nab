@@ -17,10 +17,25 @@ Better --help:
 Support leading-dot syntax:
     m .skip 1 .head 12 .findall '\d+' .str .nl
 
+Add helpers:
+    - Something to simplify Python regex usages.
+
+        m = re.search(r'', TEXT)
+        if m:
+            return m.group(2)
+        else:
+            return 'BAD'
+
+        ???
+
 Add more steps:
     - Improve:
         - flipflop : see comments
         - Assess current options; add other features.
+    - Check for ideas:
+        - $HOME/bin scripts.
+        - MPC scripts.
+        - Unix commands.
     - Add more steps:
         - count
         - cols
@@ -30,8 +45,6 @@ Add more steps:
         - tail
         - dive
         - cross
-    - Check $HOME/bin scripts for ideas.
-    - Check MPC scripts for ideas.
 
 Run():
     - Confirm can support indented input.
