@@ -2,57 +2,120 @@
 TODO
 --------
 
-Some end-to-end tests to exercise most behavior.
+Planning and design:
 
-Improve existing steps:
-    - Add help text.
-    - Assess option naming conventions.
-    - Assess step names.
+    Add more steps: research for ideas.
+
+    Improve existing steps:
+        - Assess option naming conventions.
+        - Assess step names.
+
+Stuff I want sooner:
+
+    Support leading-dot syntax and --step-mode option.
+
+File support:
+
+    File discovery steps:
+        - Via a file: one path per line.
+        - Via clipboard.
+        - Via directory walk.
+        - Via glob.
+
+    Support paths via:
+        - ARGS + paths-option
+        - The --paths option
+        - STDIN (if paths-stdin defined)
+        - Or any combination.
 
 Better --help:
+
+    - Add step option-help text.
     - Show step docs.
     - Show Step.DESC.
     - Support Step.GROUPS.
 
-Support leading-dot syntax:
-    m .skip 1 .head 12 .findall '\d+' .str .nl
+Some end-to-end tests to exercise most behavior.
 
-Add helpers:
-    - Something to simplify Python regex usages.
+Add more steps.
 
-        m = re.search(r'', TEXT)
-        if m:
-            return m.group(2)
-        else:
-            return 'BAD'
+Other:
 
-        ???
+    Add NabRgx helper class to simply regex usages.
+
+    Run():
+        - Confirm can support indented input.
+        - Confirm multiple `-s run` can be used in the same execution.
+        - Add support for other phases: discover, file_begin, file_end, end.
+        - And the run code arg itself should be optional.
+
+    step_has_phase(): confirm that this is robust (eg inheritance).
+
+    Support ability of user to control file-open mode.
+
+--------
+Usage overview
+--------
+
+INPUT | nab [OPTS] STEP... [-- PATH...]
+
+Where:
+
+    INPUT = input data via stdin (INPUT or PATHS + MARKER + INPUT)
+
+    OPTS =
+           --help
+           --step-mode short,long,name   (comma-delim; default: all)
+           --paths PATH...
+           --paths-stdin MARKER          (PATHS also via stdin until MARKER)
+
+    STEP = --step NM SOPTS
+           -s     NM SOPTS
+           .NM       SOPTS
+
+    PATH = An INPUT path
+
+--------
+NabRgx
+--------
+
+Perl:
+
+    return $1 if /.../;
+
+Python:
+
+    rgx = re.compile(...)
+    m = rgx.search(TXT)
+    if m:
+        return m.group(1)
+
+NabRgx:
+
+    rgx = NabRgx(...)
+    return iff(rgx.search(TXT), rgx[1], None)
+
+--------
+Add more steps
+--------
+
+Research for ideas:
+    - $HOME/bin scripts.
+    - MPC scripts.
+    - Unix commands.
+    - Python: builtins and methods on str, list, dict.
+
+Improve:
+    - flipflop : see comments
+    - Assess current options; add other features.
 
 Add more steps:
-    - Improve:
-        - flipflop : see comments
-        - Assess current options; add other features.
-    - Check for ideas:
-        - $HOME/bin scripts.
-        - MPC scripts.
-        - Unix commands.
-    - Add more steps:
-        - count
-        - cols
-        - wrap
-        - filename
-        - linenumber
-        - tail
-        - dive
-        - cross
-
-Run():
-    - Confirm can support indented input.
-    - Confirm multiple `-s run` can be used in the same execution.
-    - Add support for other phases: discover, file_begin, file_end, end.
-    - And the run code arg itself should be optional.
-
-step_has_phase(): confirm that this is robust (eg inheritance).
-
-Support ability of user to control file-open mode.
+    - count
+    - cols
+    - wrap
+    - filename
+    - linenumber
+    - tail
+    - dive
+    - cross
 
