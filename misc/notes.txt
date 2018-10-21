@@ -2,34 +2,33 @@
 TODO
 --------
 
-Planning and design:
+Collect ideas from other tools.
+    - Notes on ack/sed.
+    - Notes on Perl's options.
+    - MPC scripts.
+    - Check Unix grep/ack for enhancements.
 
-    Add more steps: research for ideas.
+Evaluate current steps:
+    - Assess naming conventions.
+    - Assess step option conventions.
 
-    Improve existing steps:
-        - Assess option naming conventions.
-        - Assess step names.
+Organize notes into a roadmap.
 
-Stuff I want sooner:
+Support leading-dot syntax and --step-mode option.
 
-    Support leading-dot syntax and --step-mode option.
+File discovery steps:
+    - Via a file: one path per line.
+    - Via clipboard.
+    - Via directory walk.
+    - Via glob.
 
-File support:
-
-    File discovery steps:
-        - Via a file: one path per line.
-        - Via clipboard.
-        - Via directory walk.
-        - Via glob.
-
-    Support paths via:
-        - ARGS + paths-option
-        - The --paths option
-        - STDIN (if paths-stdin defined)
-        - Or any combination.
+Support paths via:
+    - ARGS + paths-option
+    - The --paths option
+    - STDIN (if paths-stdin defined)
+    - Or any combination.
 
 Better --help:
-
     - Add step option-help text.
     - Show step docs.
     - Show Step.DESC.
@@ -39,19 +38,17 @@ Some end-to-end tests to exercise most behavior.
 
 Add more steps.
 
-Other:
+Add NabRgx helper class to simply regex usages.
 
-    Add NabRgx helper class to simply regex usages.
+Run():
+    - Confirm can support indented input.
+    - Confirm multiple `-s run` can be used in the same execution.
+    - Add support for other phases: discover, file_begin, file_end, end.
+    - And the run code arg itself should be optional.
 
-    Run():
-        - Confirm can support indented input.
-        - Confirm multiple `-s run` can be used in the same execution.
-        - Add support for other phases: discover, file_begin, file_end, end.
-        - And the run code arg itself should be optional.
+step_has_phase(): confirm that this is robust (eg inheritance).
 
-    step_has_phase(): confirm that this is robust (eg inheritance).
-
-    Support ability of user to control file-open mode.
+Support ability of user to control file-open mode.
 
 --------
 Usage overview
@@ -72,8 +69,6 @@ Where:
     STEP = --step NM SOPTS
            -s     NM SOPTS
            .NM       SOPTS
-
-    PATH = An INPUT path
 
 --------
 NabRgx
@@ -99,23 +94,107 @@ NabRgx:
 Add more steps
 --------
 
-Research for ideas:
-    - $HOME/bin scripts.
-    - MPC scripts.
-    - Unix commands.
-    - Python: builtins and methods on str, list, dict.
-
 Improve:
     - flipflop : see comments
     - Assess current options; add other features.
 
+Python: str methods
+    format        # return opts.fmt(*ln.val)
+    join          # In the sense of X.join(ln.val)
+    replace
+    rsplit
+    upper
+    lower
+
+Python: list/tuple methods
+    append
+    extend
+    insert
+    pop
+    remove
+    remove_all
+    reverse
+    sort
+    count       # ln.val.count(X)
+
+Python: dict methods
+    keys
+    values
+    pop
+
+Python: builtins
+    abs
+    bool
+    dict
+    list
+    tuple
+    set
+    max
+    min
+    len
+    reversed
+    sorted
+    round
+    zip
+    bytes   # Str() should be unicode.
+    divmod
+    getattr
+    setattr
+    hasattr
+    pow
+    slice   # In the sense of get_slice(ln.val, start, start, step)
+    range   # Similar. I have this already, but consider naming conventions.
+
 Add more steps:
     - count
-    - cols
+    - cols        # Grab cols out of a record: START, WIDTH
     - wrap
     - filename
     - linenumber
     - tail
-    - dive
-    - cross
+    - middle      # Like head/tail.
+    - dive        # Dict diving
+    - json load   # Inverse of jsond
+    - pad         # Right or left
+    - fields      # Like Perl's @F
+
+freq and cross:
+    - Single vals or tuples/lists:
+        - Single: basic freq.
+        - Tuples: freq for each position in the tuple.
+    - Options to control output:
+        - format string : '{key} : {n}'
+        - swap: same, but with n on left
+        - sort   # regular or reverse
+        - vsort  # regular or reverse
+    - cross:
+        - Implement in a parallel fashion.
+
+Unix commands:
+    - Getting path components: dir path, filename, basename, extension.
+    - File operations:
+        - Uses ln.val to perform basic file operations.
+        - Returns ln.val.
+        - Examples:
+            touch
+            write     # Expects (VAL, PATH) tuple.
+            mkdir
+            rmdir
+            rm
+            mv        # Expects a 2-tuple.
+    - wc
+    - uniq:
+        - Maintain a set: forward only unseen ln.val.
+
+Steps to change the N of values in the stream:
+    - collect N
+        - Accumulate values: self.xs (emit None in this case)
+        - When there are N of them: emit the vals and reset self.xs
+        - During end-phase: emit the remainer.
+    - explode
+        - Take CODE.
+        - CODE should take ln.val and return iterable, xs.
+        - Emit a ValIter(XS) instance.
+        - If the run-loop code gets a ValIter from a step, it
+          will emit each X.
 
