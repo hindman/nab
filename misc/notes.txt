@@ -1,18 +1,11 @@
---------
+- ------
 TODO
 --------
 
-Collect ideas from other tools.
-    - Notes on ack/sed.
-    - Notes on Perl's options.
-    - MPC scripts.
-    - Check Unix grep/ack for enhancements.
-
-Evaluate current steps:
-    - Assess naming conventions.
-    - Assess step option conventions.
-
-Organize notes into a roadmap.
+Roadmap:
+    - Draft roadmap.
+    - Evaluate current steps (eg naming and other conventions).
+    - Finalize roadmap.
 
 Support leading-dot syntax and --step-mode option.
 
@@ -106,7 +99,7 @@ Python: str methods
     upper
     lower
 
-Python: list/tuple methods
+Python: list/tuple methods (some of these could apply to strings too).
     append
     extend
     insert
@@ -153,6 +146,7 @@ Add more steps:
     - linenumber
     - tail
     - middle      # Like head/tail.
+    - lines X...  # Select lines by line number. X can take several forms (int, range, etc).
     - dive        # Dict diving
     - json load   # Inverse of jsond
     - pad         # Right or left
@@ -190,11 +184,115 @@ Steps to change the N of values in the stream:
     - collect N
         - Accumulate values: self.xs (emit None in this case)
         - When there are N of them: emit the vals and reset self.xs
-        - During end-phase: emit the remainer.
+        - What if there is a remainder?
+            - Mabye: Emit during the end-phase (a bit odd).
+            - Better: Any steps that need this should define a file_end phase
+
     - explode
         - Take CODE.
         - CODE should take ln.val and return iterable, xs.
         - Emit a ValIter(XS) instance.
         - If the run-loop code gets a ValIter from a step, it
           will emit each X.
+
+Dryrun mode for some usages:
+    - When writing to files.
+        - Take an OUTPUT_DIR.
+        - Write output files to that directory tree (creating any
+          subdirectories, as needed).
+    - When performing any file-system operations: rm, touch, etc.
+
+Perl behavior:
+
+    -l00      Input-side newline handling: input lines chomped.
+
+    -a        Auto-splits input line into the @F array.
+    -F/PATT/  Define the auto-splitting pattern.
+
+    -lX       Set the output record separator to X (octal).
+
+    -0X       Set the input record record separator to X (octal).
+
+              0777  # Slurp mode.
+              00    # Paragraph mode.
+
+Other steps:
+    - limit N   # Emit no more than N vals.
+    - count     # Count N of vals; print during end-phase.
+    - eval      # emit eval(ln.val)
+    - sample    # See MPC draw.sample.basic.pl
+
+Add self.context:
+    - A dict-with-attr-support that all steps can read/write.
+    - Example use case: a Rectype step that determines record type (eg H or P)
+      and sets self.context accordingly.
+
+Add a new phase: run_end:
+    - Presumably, multiple steps would modify self.context.
+    - During run_end(), steps could act.
+    - Sounds theoretically interesting: need a use case to justify it.
+
+Add the ability to process multiple files in parallel:
+    - Current model: process one FILE, LINE by LINE.
+    - Multi model: process N FILEs, LINE-TUPLE by LINE-TUPLE.
+    - Would be useful for file comparison work.
+    - MPC examples:
+        column.cmp.pl
+        column.merge.pl
+        rectangularize.pl
+        var.diff.pl
+
+Support for fixed-width and column-based data processing:
+    - A Positions() utility class:
+        - Takes a file path defining the var names and locations.
+        - Either fixed-with (start, width) or delimited (column number).
+    - Then expose that structure on self so Step code can use it.
+    - Add support for that convenience to relevant Step classes.
+    - See MPC scripts for use cases.
+
+File conversions back and forth among:
+    - Fixed with
+    - Delimited
+    - JSON/YAML   # With structures compatible with row-oriented data.
+
+grep behavior:
+
+    Regexp selection and interpretation:
+      -F, --fixed-strings       PATTERN is a set of newline-separated fixed strings
+      -w, --word-regexp         force PATTERN to match only whole words
+      -x, --line-regexp         force PATTERN to match only whole lines
+
+    Context control:
+      -B, --before-context=NUM  print NUM lines of leading context
+      -A, --after-context=NUM   print NUM lines of trailing context
+      -C, --context=NUM         print NUM lines of output context
+
+    From MPC scripts:
+        If rgx matches, emit location information: file, linenum, position.
+
+Support .nabrc file.
+    --nabrc=filename              Specify an ackrc file to use
+    --[no]nabrc                   Ignore .nabrc.
+    --create-nabrc                Outputs a default nabrc to standard output.
+
+ack behavior:
+
+    Searching:
+      -Q, --literal                 Quote all metacharacters; PATTERN is literal
+
+    Search output:
+      --lines=NUM                   Only print line(s) NUM of each file
+      -m, --max-count=NUM           Stop searching in each file after NUM matches
+      -1                            Stop searching after one match of any kind
+
+      -L, --files-without-match  print only names of FILEs containing no match
+      -l, --files-with-matches  print only names of FILEs containing matches
+
+    File finding:
+      --sort-files                  Sort the found files lexically.
+
+    File inclusion/exclusion:
+      --[no]follow                  Follow symlinks.  Default is off.
+
+      --type=X                      Include only X files, where X is a recognized filetype.
 
