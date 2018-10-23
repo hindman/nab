@@ -185,8 +185,28 @@ Steps to change the N of values in the stream:
         - Accumulate values: self.xs (emit None in this case)
         - When there are N of them: emit the vals and reset self.xs
         - What if there is a remainder?
-            - Mabye: Emit during the end-phase (a bit odd).
-            - Better: Any steps that need this should define a file_end phase
+
+            - The end-phase and file-end-phase are not quite right, because the
+              sit outside the val-passing structure of the run-phase.
+
+            - A new phase (eg run-final) is also not quite right.
+
+                - If a step defines run_final, nab could call it with a Line
+                  having None as its val.
+
+                - But if the phase emitted a val, we would want to process it
+                  through downstream run-phase code, not downstream run-final
+                  code.
+
+            - A Step could configure itself self.RUN_FINAL = True.
+
+                - We remain in the main run-phase processing loop.
+
+                - If a Step has RUN_FINAL true, we execute it and all
+                  downstream run-phase code.
+
+                - The Line has an IS_FINAL attribute set so the run-phase
+                  code knows its the final call.
 
     - explode
         - Take CODE.
@@ -198,47 +218,65 @@ Steps to change the N of values in the stream:
         - Example:
 
             Input vals: 1 2 3 4 5
-            Steps: int run1 run2 double sum
+            Steps: int runA runB double runC
 
-            run1: ODD ? ln.val : ValIter(10*ln.val, 10*ln.val, 10*ln.val)
-            run2: >=3 ? ln.val : ValIter(10*ln.val, 10*ln.val)
+            runA: ODD  ? ln.val : ValIter(10*ln.val, 10*ln.val, 10*ln.val)
+            runB: >=3  ? ln.val : ValIter(10*ln.val, 10*ln.val)
+            runC: rand ? ln.val : ValIter(1 + ln.val, 2 + ln.val)
 
-            1 run1
-                    10 run2
-                            100 DS
-                            100 DS
-                    10 run2
-                            100 DS
-                            100 DS
-                    10 run2
-                            100 DS
-                            100 DS
+            1 runA
+                    10 runB
+                            100 D -> 200 runC
+                                                200
+                            100 D -> 200 runC
+                                                201
+                                                202
+                    10 runB
+                            100 D -> 200 runC
+                                                200
+                            100 D -> 200 runC
+                                                200
+                    10 runB
+                            100 D -> 200 runC
+                                                201
+                                                202
+                            100 D -> 200 runC
+                                                201
+                                                202
 
             etc...
 
-        - Key question:
+        - Could a user request BFS processing?
 
-            - Process emitted values in DFS or BFS order?
+            - Maybe, if they know all of the data can be held in memory
+              before final values are emitted.
+
+            - A default line-processing program is DFS: input a LINE; run it
+              through all STEPS; then go to the next LINE.
+
+            - BFS processing would look like this:
+                - Process each LINE through 1st STEP.
+                - For non-None vals, process through 2nd STEP.
+                - Etc.
+
+            - Why might a user want it?
+
+                - Process all lines through first step, where we create a data
+                  structure in self.context.
+
+                - Then run subsequent steps, with ability to use that file-wide
+                  knowledge.
 
         - Implementation:
-
-            ???
 
             - Use a flat while-True loop to handle iteration over both lines
               and run-phases.
 
-            - Also use a DEQUE of (VAL, STEP_INDEX).
+            - Use a stack (or Q when the user requests BFS).
+
+            - The values in the stack: (VAL, STEP_INDEX).
 
             - Manually advance to the next VAL or STEP, based on conditions.
-
-            - When a run-phase emits regular value:
-
-                - Append (None, STEP_INDEX + 1) to DEQUE.
-
-
-            
-
-
 
 Dryrun mode for some usages:
     - When writing to files.
