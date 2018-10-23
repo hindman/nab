@@ -195,6 +195,51 @@ Steps to change the N of values in the stream:
         - If the run-loop code gets a ValIter from a step, it
           will emit each X.
 
+        - Example:
+
+            Input vals: 1 2 3 4 5
+            Steps: int run1 run2 double sum
+
+            run1: ODD ? ln.val : ValIter(10*ln.val, 10*ln.val, 10*ln.val)
+            run2: >=3 ? ln.val : ValIter(10*ln.val, 10*ln.val)
+
+            1 run1
+                    10 run2
+                            100 DS
+                            100 DS
+                    10 run2
+                            100 DS
+                            100 DS
+                    10 run2
+                            100 DS
+                            100 DS
+
+            etc...
+
+        - Key question:
+
+            - Process emitted values in DFS or BFS order?
+
+        - Implementation:
+
+            ???
+
+            - Use a flat while-True loop to handle iteration over both lines
+              and run-phases.
+
+            - Also use a DEQUE of (VAL, STEP_INDEX).
+
+            - Manually advance to the next VAL or STEP, based on conditions.
+
+            - When a run-phase emits regular value:
+
+                - Append (None, STEP_INDEX + 1) to DEQUE.
+
+
+            
+
+
+
 Dryrun mode for some usages:
     - When writing to files.
         - Take an OUTPUT_DIR.
