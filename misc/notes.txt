@@ -1,48 +1,3 @@
-- ------
-TODO
---------
-
-Roadmap:
-    - Draft roadmap.
-    - Evaluate current steps (eg naming and other conventions).
-    - Finalize roadmap.
-
-Support leading-dot syntax and --step-mode option.
-
-File discovery steps:
-    - Via a file: one path per line.
-    - Via clipboard.
-    - Via directory walk.
-    - Via glob.
-
-Support paths via:
-    - ARGS + paths-option
-    - The --paths option
-    - STDIN (if paths-stdin defined)
-    - Or any combination.
-
-Better --help:
-    - Add step option-help text.
-    - Show step docs.
-    - Show Step.DESC.
-    - Support Step.GROUPS.
-
-Some end-to-end tests to exercise most behavior.
-
-Add more steps.
-
-Add NabRgx helper class to simply regex usages.
-
-Run():
-    - Confirm can support indented input.
-    - Confirm multiple `-s run` can be used in the same execution.
-    - Add support for other phases: discover, file_begin, file_end, end.
-    - And the run code arg itself should be optional.
-
-step_has_phase(): confirm that this is robust (eg inheritance).
-
-Support ability of user to control file-open mode.
-
 --------
 Usage overview
 --------
@@ -63,6 +18,39 @@ Where:
            -s     NM SOPTS
            .NM       SOPTS
 
+
+--------
+Support paths via several mechanisms
+--------
+
+    - ARGS + paths-option
+    - The --paths option
+    - STDIN (if paths-stdin defined)
+
+    - Via a file: one path per line.
+    - Via clipboard.
+    - Via directory walk.
+    - Via glob.
+
+    - Or any combination.
+
+    - Other:
+
+        - sort-files option
+
+        - File inclusion/exclusion:
+            --[no]follow                  Follow symlinks.  Default is off.
+            --type=X                      Include only X files, where X is a recognized filetype.
+
+--------
+Better help
+--------
+
+    - Add step option-help text.
+    - Show step docs.
+    - Show Step.DESC.
+    - Support Step.GROUPS.
+
 --------
 NabRgx
 --------
@@ -80,20 +68,174 @@ Python:
 
 NabRgx:
 
+    - A wrapper around both the regex and the match object.
+
     rgx = NabRgx(...)
     return iff(rgx.search(TXT), rgx[1], None)
 
 --------
-Add more steps
+Run(): check and enhance
 --------
 
-Improve:
-    - flipflop : see comments
-    - Assess current options; add other features.
+    - Confirm can support indented input.
+    - Confirm multiple `-s run` can be used in the same execution.
+    - Add support for other phases: discover, file_begin, file_end, end.
+    - And the run code arg itself should be optional.
+
+--------
+Steps that collect values
+--------
+
+    - Example use cases:
+        - Assemble parapraphs of data.
+        - Assemble a household (eg IPUMS).
+
+    - Treat the file-end-phase as an extension of the run-phase:
+
+        - If a step defines file_end(), we call it.
+
+        - If data is returned, it flows through the run-phase of all downstream
+          steps.
+
+        - Expose to steps information about the N of files, along with an
+          is_last_file() helper. This is needed in case the step requires
+          special logic at the very end of the run-phase.
+
+--------
+Steps that emit multiple values
+--------
+
+    - Create a ValIter() class.
+
+    - When a step returns a ValIter(), the main loop will forward each value
+      from that iterable to all downstream steps.
+
+    - Implementation notes:
+
+        - Use a flat while-True loop to handle iteration over both lines
+          and run-phases.
+
+        - Use a stack (or Q is nab ever supports BFS).
+
+        - The values in the stack: (VAL, STEP_INDEX).
+
+        - Manually advance to the next VAL or STEP, based on conditions.
+
+--------
+Support BFS processing
+--------
+
+    - Use cases: wny time file-wide holistic knowledge (presumably collected by
+      early steps and stored in self.context) is needed by subsequent steps.
+
+    - A default line-processing program is DFS:
+        - Input a LINE.
+        - Run it through all STEPS.
+        - Go to the next LINE.
+
+    - What BFS would look like:
+        - Process all LINEs through 1st STEP.
+        - For non-None vals, process through 2nd STEP.
+        - Etc.
+
+    - Assumption: must hold all data in memory.
+
+--------
+Add Step.context
+--------
+
+    - A dict-with-attr-support that all steps can read/write.
+    - Example use case: a Rectype step that determines record type (eg H or P)
+      and sets self.context accordingly.
+
+--------
+Support parallel file processing
+--------
+
+    - Current model: process one FILE, LINE by LINE.
+
+    - Parallel model: process N FILEs, LINE-TUPLE by LINE-TUPLE.
+
+    - Use cases:
+        - File comparison work.
+        - MPC examples:
+            column.cmp.pl
+            column.merge.pl
+            rectangularize.pl
+            var.diff.pl
+
+--------
+Support .nabrc file
+--------
+
+    --nabrc=filename              Specify an ackrc file to use
+    --[no]nabrc                   Ignore .nabrc.
+    --create-nabrc                Outputs a default nabrc to standard output.
+
+--------
+DataDict() helper class for positional data processing
+--------
+
+    - DataDict() helper class:
+        - Takes a file path defining the var names and locations.
+        - Either fixed-with (start, width) or delimited (column number).
+
+    - Then expose that structure on self so Step code can use it.
+
+    - Add support for that convenience to relevant Step classes.
+
+    - See MPC scripts for use cases.
+
+--------
+Grep() enhance
+--------
+
+    Regexp selection and interpretation:
+
+      -F, --fixed-strings       PATTERN is a set of newline-separated fixed strings
+      -Q, --literal             Quote all metacharacters; PATTERN is literal
+
+      -w, --word-regexp         force PATTERN to match only whole words
+      -x, --line-regexp         force PATTERN to match only whole lines
+
+    Context control:
+      -B, --before-context=NUM  print NUM lines of leading context
+      -A, --after-context=NUM   print NUM lines of trailing context
+      -C, --context=NUM         print NUM lines of output context
+
+    Search output:
+      --lines=NUM                   Only print line(s) NUM of each file
+      -m, --max-count=NUM           Stop searching in each file after NUM matches
+      -1                            Stop searching after one match of any kind
+
+      -L, --files-without-match     print only names of FILEs containing no match
+      -l, --files-with-matches      print only names of FILEs containing matches
+
+    Use case from MPC scripts:
+        If rgx matches, emit location information: file, linenum, position.
+
+--------
+Dryrun support
+--------
+
+Example use cases:
+
+    - When writing to files.
+
+        - Take an OUTPUT_DIR.
+
+        - Write output files to that directory tree (creating any
+          subdirectories, as needed).
+
+    - When performing any file-system operations: rm, touch, etc.
+
+--------
+Add/improve Steps
+--------
 
 Python: str methods
-    format        # return opts.fmt(*ln.val)
-    join          # In the sense of X.join(ln.val)
+    format       # return opts.fmt(*ln.val)
+    join         # In the sense of X.join(ln.val)
     replace
     rsplit
     upper
@@ -108,7 +250,7 @@ Python: list/tuple methods (some of these could apply to strings too).
     remove_all
     reverse
     sort
-    count       # ln.val.count(X)
+    count        # ln.val.count(X)
 
 Python: dict methods
     keys
@@ -129,28 +271,35 @@ Python: builtins
     sorted
     round
     zip
-    bytes   # Str() should be unicode.
+    bytes        # Str() should be unicode.
     divmod
     getattr
     setattr
     hasattr
     pow
-    slice   # In the sense of get_slice(ln.val, start, start, step)
-    range   # Similar. I have this already, but consider naming conventions.
+    slice        # In the sense of get_slice(ln.val, start, start, step)
+    range        # Similar. I have this already, but consider naming conventions.
 
-Add more steps:
+Other:
+    - flipflop   # See code comments.
     - count
-    - cols        # Grab cols out of a record: START, WIDTH
+    - cols       # Grab cols out of a record: START, WIDTH
     - wrap
     - filename
     - linenumber
     - tail
-    - middle      # Like head/tail.
-    - lines X...  # Select lines by line number. X can take several forms (int, range, etc).
-    - dive        # Dict diving
-    - json load   # Inverse of jsond
-    - pad         # Right or left
-    - fields      # Like Perl's @F
+    - middle     # Like head/tail.
+    - lines X... # Select lines by line number. X can take several forms (int, range, etc).
+    - dive       # Dict diving
+    - json load  # Inverse of jsond
+    - pad        # Right or left
+    - fields     # Like Perl's @F
+    - wc
+    - uniq       # Maintain a set: forward only unseen ln.val.
+    - limit N   # Emit no more than N vals.
+    - count     # Count N of vals; print during end-phase.
+    - eval      # emit eval(ln.val)
+    - sample    # See MPC draw.sample.basic.pl
 
 freq and cross:
     - Single vals or tuples/lists:
@@ -164,218 +313,55 @@ freq and cross:
     - cross:
         - Implement in a parallel fashion.
 
-Unix commands:
-    - Getting path components: dir path, filename, basename, extension.
-    - File operations:
-        - Uses ln.val to perform basic file operations.
-        - Returns ln.val.
-        - Examples:
-            touch
-            write     # Expects (VAL, PATH) tuple.
-            mkdir
-            rmdir
-            rm
-            mv        # Expects a 2-tuple.
-    - wc
-    - uniq:
-        - Maintain a set: forward only unseen ln.val.
+File path components:
+    - dir path
+    - file name
+    - basename
+    - extension
 
-Steps to change the N of values in the stream:
-    - collect N
-        - Accumulate values: self.xs (emit None in this case)
-        - When there are N of them: emit the vals and reset self.xs
-        - What if there is a remainder?
-
-            - The end-phase and file-end-phase are not quite right, because the
-              sit outside the val-passing structure of the run-phase.
-
-            - A new phase (eg run-final) is also not quite right.
-
-                - If a step defines run_final, nab could call it with a Line
-                  having None as its val.
-
-                - But if the phase emitted a val, we would want to process it
-                  through downstream run-phase code, not downstream run-final
-                  code.
-
-            - A Step could configure itself self.RUN_FINAL = True.
-
-                - We remain in the main run-phase processing loop.
-
-                - If a Step has RUN_FINAL true, we execute it and all
-                  downstream run-phase code.
-
-                - The Line has an IS_FINAL attribute set so the run-phase
-                  code knows its the final call.
-
-    - explode
-        - Take CODE.
-        - CODE should take ln.val and return iterable, xs.
-        - Emit a ValIter(XS) instance.
-        - If the run-loop code gets a ValIter from a step, it
-          will emit each X.
-
-        - Example:
-
-            Input vals: 1 2 3 4 5
-            Steps: int runA runB double runC
-
-            runA: ODD  ? ln.val : ValIter(10*ln.val, 10*ln.val, 10*ln.val)
-            runB: >=3  ? ln.val : ValIter(10*ln.val, 10*ln.val)
-            runC: rand ? ln.val : ValIter(1 + ln.val, 2 + ln.val)
-
-            1 runA
-                    10 runB
-                            100 D -> 200 runC
-                                                200
-                            100 D -> 200 runC
-                                                201
-                                                202
-                    10 runB
-                            100 D -> 200 runC
-                                                200
-                            100 D -> 200 runC
-                                                200
-                    10 runB
-                            100 D -> 200 runC
-                                                201
-                                                202
-                            100 D -> 200 runC
-                                                201
-                                                202
-
-            etc...
-
-        - Could a user request BFS processing?
-
-            - Maybe, if they know all of the data can be held in memory
-              before final values are emitted.
-
-            - A default line-processing program is DFS: input a LINE; run it
-              through all STEPS; then go to the next LINE.
-
-            - BFS processing would look like this:
-                - Process each LINE through 1st STEP.
-                - For non-None vals, process through 2nd STEP.
-                - Etc.
-
-            - Why might a user want it?
-
-                - Process all lines through first step, where we create a data
-                  structure in self.context.
-
-                - Then run subsequent steps, with ability to use that file-wide
-                  knowledge.
-
-        - Implementation:
-
-            - Use a flat while-True loop to handle iteration over both lines
-              and run-phases.
-
-            - Use a stack (or Q when the user requests BFS).
-
-            - The values in the stack: (VAL, STEP_INDEX).
-
-            - Manually advance to the next VAL or STEP, based on conditions.
-
-Dryrun mode for some usages:
-    - When writing to files.
-        - Take an OUTPUT_DIR.
-        - Write output files to that directory tree (creating any
-          subdirectories, as needed).
-    - When performing any file-system operations: rm, touch, etc.
-
-Perl behavior:
-
-    -l00      Input-side newline handling: input lines chomped.
-
-    -a        Auto-splits input line into the @F array.
-    -F/PATT/  Define the auto-splitting pattern.
-
-    -lX       Set the output record separator to X (octal).
-
-    -0X       Set the input record record separator to X (octal).
-
-              0777  # Slurp mode.
-              00    # Paragraph mode.
-
-Other steps:
-    - limit N   # Emit no more than N vals.
-    - count     # Count N of vals; print during end-phase.
-    - eval      # emit eval(ln.val)
-    - sample    # See MPC draw.sample.basic.pl
-
-Add self.context:
-    - A dict-with-attr-support that all steps can read/write.
-    - Example use case: a Rectype step that determines record type (eg H or P)
-      and sets self.context accordingly.
-
-Add a new phase: run_end:
-    - Presumably, multiple steps would modify self.context.
-    - During run_end(), steps could act.
-    - Sounds theoretically interesting: need a use case to justify it.
-
-Add the ability to process multiple files in parallel:
-    - Current model: process one FILE, LINE by LINE.
-    - Multi model: process N FILEs, LINE-TUPLE by LINE-TUPLE.
-    - Would be useful for file comparison work.
-    - MPC examples:
-        column.cmp.pl
-        column.merge.pl
-        rectangularize.pl
-        var.diff.pl
-
-Support for fixed-width and column-based data processing:
-    - A Positions() utility class:
-        - Takes a file path defining the var names and locations.
-        - Either fixed-with (start, width) or delimited (column number).
-    - Then expose that structure on self so Step code can use it.
-    - Add support for that convenience to relevant Step classes.
-    - See MPC scripts for use cases.
+File operations:
+    - Uses ln.val to perform basic file operations.
+    - Returns ln.val.
+    - Examples:
+        touch
+        write     # Expects (VAL, PATH) tuple.
+        mkdir
+        rmdir
+        rm
+        mv        # Expects a 2-tuple.
 
 File conversions back and forth among:
     - Fixed with
     - Delimited
     - JSON/YAML   # With structures compatible with row-oriented data.
 
-grep behavior:
+--------
+Terminology
+--------
 
-    Regexp selection and interpretation:
-      -F, --fixed-strings       PATTERN is a set of newline-separated fixed strings
-      -w, --word-regexp         force PATTERN to match only whole words
-      -x, --line-regexp         force PATTERN to match only whole lines
+Terminology:
 
-    Context control:
-      -B, --before-context=NUM  print NUM lines of leading context
-      -A, --after-context=NUM   print NUM lines of trailing context
-      -C, --context=NUM         print NUM lines of output context
+    - Run: end-to-end execution of nab.
+    - Phase: the major subsections of a run.
+    - Step: user-supplied parts of the processing pipeline.
 
-    From MPC scripts:
-        If rgx matches, emit location information: file, linenum, position.
+Phase names considered:
 
-Support .nabrc file.
-    --nabrc=filename              Specify an ackrc file to use
-    --[no]nabrc                   Ignore .nabrc.
-    --create-nabrc                Outputs a default nabrc to standard output.
+    Current    | Explicit       | Alt1     | Alt2       | Alt2       | .
+    -------------------------------------------------------------------------
+    begin      | begin          | begin    | configure  | begin      | .
+    discover   | discover_files | discover | discover   | discover   | .
+    file_begin | begin_file     | prepare  | initialize | initialize | .
+    run        | process_value  | process  | process    | process    | .
+    file_end   | end_file       | wrapup   | finalize   | finalize   | .
+    end        | end            | end      | end        | end        | .
 
-ack behavior:
+Decision:
 
-    Searching:
-      -Q, --literal                 Quote all metacharacters; PATTERN is literal
-
-    Search output:
-      --lines=NUM                   Only print line(s) NUM of each file
-      -m, --max-count=NUM           Stop searching in each file after NUM matches
-      -1                            Stop searching after one match of any kind
-
-      -L, --files-without-match  print only names of FILEs containing no match
-      -l, --files-with-matches  print only names of FILEs containing matches
-
-    File finding:
-      --sort-files                  Sort the found files lexically.
-
-    File inclusion/exclusion:
-      --[no]follow                  Follow symlinks.  Default is off.
-
-      --type=X                      Include only X files, where X is a recognized filetype.
+    begin      | Steps configure themselves.
+    discover   | Steps can be used for file discovery.
+    initialize | Steps can initialize at the start of a file.
+    process    | Process one value.
+    finalize   | The end-of-file extension of the process-phase.
+    end        | Emit final outputs.
 
