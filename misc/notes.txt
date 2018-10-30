@@ -77,10 +77,19 @@ NabRgx:
 Run(): check and enhance
 --------
 
+    - Support other phases and allow CODE for process-phase to be optional.
+
+        --step run [CODE]
+               [--discover CODE]
+               [--initialize CODE]
+               [--process CODE]
+               [--finalize CODE]
+               [--end CODE]
+               [-i N]
+
     - Confirm can support indented input.
+
     - Confirm multiple `-s run` can be used in the same execution.
-    - Add support for other phases: discover, file_begin, file_end, end.
-    - And the run code arg itself should be optional.
 
 --------
 Steps that collect values
@@ -230,20 +239,120 @@ Example use cases:
     - When performing any file-system operations: rm, touch, etc.
 
 --------
+Terminology
+--------
+
+Terminology:
+
+    - Run: end-to-end execution of nab.
+    - Phase: the major subsections of a run.
+    - Step: user-supplied parts of the processing pipeline.
+
+Phase names considered:
+
+    Current    | Explicit       | Alt1     | Alt2       | Alt2       | .
+    -------------------------------------------------------------------------
+    begin      | begin          | begin    | configure  | begin      | .
+    discover   | discover_files | discover | discover   | discover   | .
+    file_begin | begin_file     | prepare  | initialize | initialize | .
+    run        | process_value  | process  | process    | process    | .
+    file_end   | end_file       | wrapup   | finalize   | finalize   | .
+    end        | end            | end      | end        | end        | .
+
+Decision:
+
+    begin      | Steps configure themselves.
+    discover   | Steps can be used for file discovery.
+    initialize | Steps can initialize at the start of a file.
+    process    | Process one value.
+    finalize   | The end-of-file extension of the process-phase.
+    end        | Emit final outputs.
+
+--------
+Unicode handling
+--------
+
+Line input: decode, if needed:
+    - ln.val should always be str (Py3) or unicde (Py2).
+    - Behavior varies between opened files and stdin.
+    - Might also vary between Py2 and Py3.
+
+Output: encode, if needed.
+
+Str(): convert to six.text_type, not Py2-str.
+
+Provide user an option to control encodings.
+
+--------
 Add/improve Steps
 --------
 
-Python: str methods
-    format       # return opts.fmt(*ln.val)
-    join         # In the sense of X.join(ln.val)
-    replace
-    rsplit
-    upper
-    lower
+Current steps:
+
+    Group     | Step     | Opts              | Status  | Notes
+    ---------------------------------------------------------------------------------------
+    Write     | .        | .                 | .       | .
+    .         | Pr       | .                 | .       | .
+    .         | Wr       | .                 | .       | .
+    Strip     | .        | .                 | .       | .
+    .         | Chomp    | .                 | .       | .
+    .         | Strip    | S                 | .       | .
+    .         | LStrip   | S                 | .       | .
+    .         | RStrip   | S                 | .       | .
+    Split     | .        | .                 | .       | .
+    .         | Split    | RGX               | enhance | #
+    .         | RSplit   | SEP --max         | add     | .
+    .         | Join     | J                 | .       | .
+    Index     | .        | .                 | .       | .
+    .         | Index    | I --strict        | .       | .
+    .         | RIndex   | I --strict        | .       | .
+    .         | Range    | I J S             | .       | .
+    Select    | .        | .                 | .       | .
+    .         | Head     | N                 | .       | .
+    .         | Skip     | N                 | .       | .
+    .         | FlipFlop | RGX1 RGX2         | .       | .
+    .         | Grep     | RGX -i -v -s      | .       | .
+    Suffix    | .        | .                 | .       | .
+    .         | Nl       | .                 | .       | .
+    .         | Prefix   | PRE               | .       | .
+    .         | Suffix   | SUFF              | .       | .
+    Aggregate | .        | .                 | .       | .
+    .         | Freq     | .                 | .       | .
+    .         | Sum      | .                 | .       | .
+    Convert   | .        | .                 | .       | .
+    .         | Str      | .                 | .       | .
+    .         | Int      | .                 | .       | .
+    .         | Float    | .                 | .       | .
+    Search    | .        | .                 | .       | .
+    .         | Sub      | RGX REPL -n -f -i | .       | .
+    .         | Search   | RGX -g -a         | .       | .
+    .         | FindAll  | RGX               | .       | .
+    Run       | .        | .                 | .       | .
+    .         | Run      | CODE -i           | .       | .
+    JSON      | .        | .                 | .       | .
+    .         | JsonD    | I                 | .       | .
+    String    | .        | .                 | .       | .
+    .         | Format   | FMT               | add     | #
+    .         | Upper    | .                 | add     | .
+    .         | Lower    | .                 | add     | .
+    .         | Replace  | OLD NEW -n        | add     | .
+    List      | .        | .                 | .       | .
+    .         | Append   | .                 | add     | #
+    .         | Extend   | .                 | add     | #
+
+Notes:
+
+    Format:
+        - Takes FMT.
+        - Returns FMT.format(*ln.val OR **ln.val)
+
+    Split:
+        - Support non-regex mode: S.split(SEP, MAX).
+
+    Append, Extend:
+        - Support most sequence types: string, list, tuple, etc.
 
 Python: list/tuple methods (some of these could apply to strings too).
-    append
-    extend
     insert
     pop
     remove
@@ -334,34 +443,4 @@ File conversions back and forth among:
     - Fixed with
     - Delimited
     - JSON/YAML   # With structures compatible with row-oriented data.
-
---------
-Terminology
---------
-
-Terminology:
-
-    - Run: end-to-end execution of nab.
-    - Phase: the major subsections of a run.
-    - Step: user-supplied parts of the processing pipeline.
-
-Phase names considered:
-
-    Current    | Explicit       | Alt1     | Alt2       | Alt2       | .
-    -------------------------------------------------------------------------
-    begin      | begin          | begin    | configure  | begin      | .
-    discover   | discover_files | discover | discover   | discover   | .
-    file_begin | begin_file     | prepare  | initialize | initialize | .
-    run        | process_value  | process  | process    | process    | .
-    file_end   | end_file       | wrapup   | finalize   | finalize   | .
-    end        | end            | end      | end        | end        | .
-
-Decision:
-
-    begin      | Steps configure themselves.
-    discover   | Steps can be used for file discovery.
-    initialize | Steps can initialize at the start of a file.
-    process    | Process one value.
-    finalize   | The end-of-file extension of the process-phase.
-    end        | Emit final outputs.
 

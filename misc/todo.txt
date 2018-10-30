@@ -2,11 +2,6 @@
 Planning
 --------
 
-Decide how to handle unicode conversions.
-
-Run(): check and enhance [see notes].
-    - Write up a plan.
-
 Add/improve Steps:
     - [see notes].
     - Evaluate current steps (eg naming and other conventions).
@@ -19,7 +14,9 @@ Roadmap: finalize.
 Core
 --------
 
-Rename phases [see details].
+Rename phases [see notes].
+
+Unicode handling [see notes].
 
 Support steps that collect values [see notes].
 
@@ -30,6 +27,8 @@ Add Step.context [see notes].
 --------
 Later
 --------
+
+Run(): support all phases [see notes].
 
 Support leading-dot syntax and --step-mode option [see notes].
 
@@ -45,7 +44,7 @@ Add NabRgx helper class to simply regex usages [see notes].
 
 step_has_phase(): confirm that this is robust (eg inheritance).
 
-Support ability of user to control file-open mode.
+Support ability of user to control file-open mode and encodings.
 
 Support BFS processing [see notes].
 

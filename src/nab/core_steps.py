@@ -135,7 +135,7 @@ class Range(Index):
         return ln.val[opts.i : opts.j : opts.s]
 
 ####
-# Head.
+# Head, skip, etc.
 ####
 
 class Head(Step):
@@ -191,7 +191,7 @@ class Suffix(Step):
         return ln.val + opts.suff
 
 ####
-# Frequencies.
+# Aggregations.
 ####
 
 class Freq(Step):
@@ -206,10 +206,6 @@ class Freq(Step):
         for k in sorted(opts.freq):
             msg = '{}: {}'.format(k, opts.freq[k])
             self.out(msg)
-
-####
-# Sum.
-####
 
 class Sum(Step):
 
@@ -358,7 +354,7 @@ class Run(Step):
         self.run = functools.partial(d['_run'], self)
 
 ####
-# JSON dumping.
+# JSON handling.
 ####
 
 class JsonD(Step):
