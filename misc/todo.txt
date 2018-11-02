@@ -6,7 +6,7 @@ Add/improve Steps:
     - [see notes].
     - Evaluate current steps (eg naming and other conventions).
     - Sketch usage and naming for all steps in the roadmap.
-    - Create a sub-roadmap for this.
+    - Decide about naming conflicts: eg Count.
 
 Roadmap: finalize.
 

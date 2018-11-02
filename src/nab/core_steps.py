@@ -387,20 +387,6 @@ class FlipFlop(Step):
         opts.on = False
 
     def run(self, opts, ln):
-        # TODO:
-        #
-        # - Allow ON and then OFF checks to occur on same line.
-        #
-        # - Allow options to govern inclusiveness:
-        #
-        #              1st ON line  | 1st OFF line
-        #    full    | yes          | yes            # Perl's default.
-        #    partial | yes          | no
-        #    none    | no           | no
-        #
-        # - Support line number mode for rgx1 and/or rgx2: in this case
-        #   the ON/OFF logic is based on line numbers.
-        #
         if opts.on:
             m = opts.rgx2.search(ln.val)
             if m:

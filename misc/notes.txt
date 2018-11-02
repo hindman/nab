@@ -289,126 +289,152 @@ Add/improve Steps
 
 Current steps:
 
-    Group     | Step     | Opts              | Status  | Notes
+    Group     | Step      | Opts              | Status  | Notes
     ---------------------------------------------------------------------------------------
-    Write     | .        | .                 | .       | .
-    .         | Pr       | .                 | .       | .
-    .         | Wr       | .                 | .       | .
-    Strip     | .        | .                 | .       | .
-    .         | Chomp    | .                 | .       | .
-    .         | Strip    | S                 | .       | .
-    .         | LStrip   | S                 | .       | .
-    .         | RStrip   | S                 | .       | .
-    Split     | .        | .                 | .       | .
-    .         | Split    | RGX               | enhance | #
-    .         | RSplit   | SEP --max         | add     | .
-    .         | Join     | J                 | .       | .
-    Index     | .        | .                 | .       | .
-    .         | Index    | I --strict        | .       | .
-    .         | RIndex   | I --strict        | .       | .
-    .         | Range    | I J S             | .       | .
-    Select    | .        | .                 | .       | .
-    .         | Head     | N                 | .       | .
-    .         | Skip     | N                 | .       | .
-    .         | FlipFlop | RGX1 RGX2         | .       | .
-    .         | Grep     | RGX -i -v -s      | .       | .
-    Suffix    | .        | .                 | .       | .
-    .         | Nl       | .                 | .       | .
-    .         | Prefix   | PRE               | .       | .
-    .         | Suffix   | SUFF              | .       | .
-    Aggregate | .        | .                 | .       | .
-    .         | Freq     | .                 | .       | .
-    .         | Sum      | .                 | .       | .
-    Convert   | .        | .                 | .       | .
-    .         | Str      | .                 | .       | .
-    .         | Int      | .                 | .       | .
-    .         | Float    | .                 | .       | .
-    Search    | .        | .                 | .       | .
-    .         | Sub      | RGX REPL -n -f -i | .       | .
-    .         | Search   | RGX -g -a         | .       | .
-    .         | FindAll  | RGX               | .       | .
-    Run       | .        | .                 | .       | .
-    .         | Run      | CODE -i           | .       | .
-    JSON      | .        | .                 | .       | .
-    .         | JsonD    | I                 | .       | .
-    String    | .        | .                 | .       | .
-    .         | Format   | FMT               | add     | #
-    .         | Upper    | .                 | add     | .
-    .         | Lower    | .                 | add     | .
-    .         | Replace  | OLD NEW -n        | add     | .
-    List      | .        | .                 | .       | .
-    .         | Append   | .                 | add     | #
-    .         | Extend   | .                 | add     | #
+    Write     | .         | .                 | .       | .
+    .         | Pr        | .                 | .       | .
+    .         | Wr        | .                 | .       | .
+    Strip     | .         | .                 | .       | .
+    .         | Chomp     | .                 | .       | .
+    .         | Strip     | S                 | .       | .
+    .         | LStrip    | S                 | .       | .
+    .         | RStrip    | S                 | .       | .
+    Split     | .         | .                 | .       | .
+    .         | Split     | RGX               | enhance | Support S.split(SEP, MAX).
+    .         | RSplit    | SEP --max         | add     | .
+    .         | Join      | J                 | .       | .
+    Index     | .         | .                 | .       | .
+    .         | Index     | I --strict        | enhance | ###
+    .         | RIndex    | I --strict        | enhance | ###
+    .         | Range     | I J S             | .       | .
+    Select    | .         | .                 | .       | .
+    .         | Head      | N                 | .       | .
+    .         | Tail      | .                 | add     | .
+    .         | Middle    | .                 | add     | .
+    .         | Lines     | .                 | add     | ###
+    .         | Skip      | N                 | .       | .
+    .         | Limit     | N                 | .       | Emit no more than N values.
+    .         | FlipFlop  | RGX1 RGX2         | enhance | ###
+    .         | Grep      | RGX -i -v -s      | .       | .
+    Suffix    | .         | .                 | .       | .
+    .         | Nl        | .                 | .       | .
+    .         | Prefix    | PRE               | .       | .
+    .         | Suffix    | SUFF              | .       | .
+    Aggregate | .         | .                 | .       | .
+    .         | Freq      | .                 | .       | .
+    .         | Sum       | .                 | .       | .
+    .         | Min       | .                 | add     | .
+    .         | Max       | .                 | add     | .
+    .         | Count     | .                 | add     | ###
+    Convert   | .         | .                 | .       | .
+    .         | Str       | .                 | .       | .
+    .         | Int       | .                 | .       | .
+    .         | Float     | .                 | .       | .
+    .         | List      | .                 | add     | .
+    .         | Dict      | .                 | add     | .
+    .         | Set       | .                 | add     | .
+    .         | Tuple     | .                 | add     | .
+    .         | Bytes     | .                 | add     | .
+    .         | Bool      | .                 | add     | .
+    Search    | .         | .                 | .       | .
+    .         | Sub       | RGX REPL -n -f -i | .       | .
+    .         | Search    | RGX -g -a         | .       | .
+    .         | FindAll   | RGX               | .       | .
+    Run       | .         | .                 | .       | .
+    .         | Run       | CODE -i           | .       | .
+    JSON      | .         | .                 | .       | .
+    .         | JsonD     | I                 | .       | .
+    .         | JsonL     | I                 | add     | .
+    String    | .         | .                 | .       | .
+    .         | Format    | FMT               | add     | Return FMT.format(*ln.val OR **ln.val).
+    .         | Upper     | .                 | add     | .
+    .         | Lower     | .                 | add     | .
+    .         | Replace   | OLD NEW -n        | add     | .
+    Sequence  | .         | .                 | .       | ###
+    .         | Append    | .                 | add     | .
+    .         | Extend    | .                 | add     | .
+    .         | Insert    | .                 | add     | .
+    .         | Pop       | .                 | add     | .
+    .         | Remove    | .                 | add     | .
+    .         | Reverse   | .                 | add     | .
+    .         | Sort      | .                 | add     | .
+    .         | Count     | .                 | add     | ###
+    .         | Len       | .                 | add     | .
+    .         | Zip       | .                 | add     | .
+    Dict      | .         | .                 | .       | .
+    .         | Keys      | .                 | add     | .
+    .         | Values    | .                 | add     | .
+    .         | Items     | .                 | add     | .
+    .         | Update    | .                 | add     | Support JSON input.
+    FileOp    | .         | .                 | .       | Typically returns ln.val.
+    .         | Touch     | .                 | add     | .
+    .         | Write     | .                 | add     | Takes (VAL, PATH).
+    .         | MkDir     | .                 | add     | .
+    .         | RmDir     | .                 | add     | .
+    .         | Rm        | .                 | add     | .
+    .         | Mv        | .                 | add     | Takes (OLD, NEW).
+    Path      | .         | .                 | .       | .
+    .         | DirPath   | .                 | add     | .
+    .         | FileName  | .                 | add     | .
+    .         | BaseName  | .                 | add     | .
+    .         | Extension | .                 | add     | .
+    Math      | .         | .                 | .       | .
+    .         | Abs       | .                 | add     | .
+    .         | Round     | .                 | add     | .
+    .         | DivMod    | .                 | add     | .
+    .         | Pow       | .                 | add     | .
+    GetSet    | .         | .                 | .       | .
+    .         | GetAttr   | .                 | add     | .
+    .         | SetAttr   | .                 | add     | .
+    .         | HasAttr   | .                 | add     | .
+    .         | GetItem   | .                 | add     | .
+    .         | SetItem   | .                 | add     | .
+    .         | HasItem   | .                 | add     | .
+    Group     | .         | .                 | .       | .
+    .         | Para      | .                 | add     | .
 
 Notes:
 
-    Format:
-        - Takes FMT.
-        - Returns FMT.format(*ln.val OR **ln.val)
+    Index, RIndex:
+        - Take 1+ indexes.
+        - If more than 1, return a tuple.
 
-    Split:
-        - Support non-regex mode: S.split(SEP, MAX).
+    Count:
+        - Naming collision: Aggregate.Count and Sequence.Count.
 
-    Append, Extend:
-        - Support most sequence types: string, list, tuple, etc.
+    Sequence:
+        - Supported types: list, tuple, sometimes str, sometimes dict.
+        - Functions take VAL: support common conversion (eg int) and JSON input.
+        - Return mutated sequence: eg Remove, Sort.
+        - Remove: support --all.
+        - Sort: support --key option that takes code.
 
-Python: list/tuple methods (some of these could apply to strings too).
-    insert
-    pop
-    remove
-    remove_all
-    reverse
-    sort
-    count        # ln.val.count(X)
+    Lines:
+        - Selects lines by line-number.
+        - Input can take various forms: int, range, etc.
 
-Python: dict methods
-    keys
-    values
-    pop
+    FlipFlop:
+        - Allow ON and then OFF checks to occur on same line.
+        - Support line number mode for rgx1 and/or rgx2: in this case
+          the ON/OFF logic is based on line numbers.
+        - Allow options to govern inclusiveness:
+                     1st ON line  | 1st OFF line
+           ------------------------------------------------------
+           full    | yes          | yes            # Perl default
+           partial | yes          | no
+           none    | no           | no
 
-Python: builtins
-    abs
-    bool
-    dict
-    list
-    tuple
-    set
-    max
-    min
-    len
-    reversed
-    sorted
-    round
-    zip
-    bytes        # Str() should be unicode.
-    divmod
-    getattr
-    setattr
-    hasattr
-    pow
-    slice        # In the sense of get_slice(ln.val, start, start, step)
-    range        # Similar. I have this already, but consider naming conventions.
-
-Other:
-    - flipflop   # See code comments.
-    - count
+Misc:
+    - wc
+    - uniq       # Maintain a set: forward only unseen ln.val.
+    - pad        # Right or left
     - cols       # Grab cols out of a record: START, WIDTH
+    - dive       # Dict diving
+    - eval       # emit eval(ln.val)
+    - sample     # See MPC draw.sample.basic.pl
     - wrap
     - filename
     - linenumber
-    - tail
-    - middle     # Like head/tail.
-    - lines X... # Select lines by line number. X can take several forms (int, range, etc).
-    - dive       # Dict diving
-    - json load  # Inverse of jsond
-    - pad        # Right or left
-    - fields     # Like Perl's @F
-    - wc
-    - uniq       # Maintain a set: forward only unseen ln.val.
-    - limit N   # Emit no more than N vals.
-    - count     # Count N of vals; print during end-phase.
-    - eval      # emit eval(ln.val)
-    - sample    # See MPC draw.sample.basic.pl
 
 freq and cross:
     - Single vals or tuples/lists:
@@ -421,23 +447,6 @@ freq and cross:
         - vsort  # regular or reverse
     - cross:
         - Implement in a parallel fashion.
-
-File path components:
-    - dir path
-    - file name
-    - basename
-    - extension
-
-File operations:
-    - Uses ln.val to perform basic file operations.
-    - Returns ln.val.
-    - Examples:
-        touch
-        write     # Expects (VAL, PATH) tuple.
-        mkdir
-        rmdir
-        rm
-        mv        # Expects a 2-tuple.
 
 File conversions back and forth among:
     - Fixed with
