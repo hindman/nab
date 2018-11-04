@@ -287,111 +287,124 @@ Provide user an option to control encodings.
 Add/improve Steps
 --------
 
-Current steps:
+Steps:
 
-    Group     | Step      | Opts              | Status  | Notes
-    ---------------------------------------------------------------------------------------
-    Write     | .         | .                 | .       | .
-    .         | Pr        | .                 | .       | .
-    .         | Wr        | .                 | .       | .
-    Strip     | .         | .                 | .       | .
-    .         | Chomp     | .                 | .       | .
-    .         | Strip     | S                 | .       | .
-    .         | LStrip    | S                 | .       | .
-    .         | RStrip    | S                 | .       | .
-    Split     | .         | .                 | .       | .
-    .         | Split     | RGX               | enhance | Support S.split(SEP, MAX).
-    .         | RSplit    | SEP --max         | add     | .
-    .         | Join      | J                 | .       | .
-    Index     | .         | .                 | .       | .
-    .         | Index     | I --strict        | enhance | ###
-    .         | RIndex    | I --strict        | enhance | ###
-    .         | Range     | I J S             | .       | .
-    Select    | .         | .                 | .       | .
-    .         | Head      | N                 | .       | .
-    .         | Tail      | .                 | add     | .
-    .         | Middle    | .                 | add     | .
-    .         | Lines     | .                 | add     | ###
-    .         | Skip      | N                 | .       | .
-    .         | Limit     | N                 | .       | Emit no more than N values.
-    .         | FlipFlop  | RGX1 RGX2         | enhance | ###
-    .         | Grep      | RGX -i -v -s      | .       | .
-    Suffix    | .         | .                 | .       | .
-    .         | Nl        | .                 | .       | .
-    .         | Prefix    | PRE               | .       | .
-    .         | Suffix    | SUFF              | .       | .
-    Aggregate | .         | .                 | .       | .
-    .         | Freq      | .                 | .       | .
-    .         | Sum       | .                 | .       | .
-    .         | Min       | .                 | add     | .
-    .         | Max       | .                 | add     | .
-    .         | Count     | .                 | add     | ###
-    Convert   | .         | .                 | .       | .
-    .         | Str       | .                 | .       | .
-    .         | Int       | .                 | .       | .
-    .         | Float     | .                 | .       | .
-    .         | List      | .                 | add     | .
-    .         | Dict      | .                 | add     | .
-    .         | Set       | .                 | add     | .
-    .         | Tuple     | .                 | add     | .
-    .         | Bytes     | .                 | add     | .
-    .         | Bool      | .                 | add     | .
-    Search    | .         | .                 | .       | .
-    .         | Sub       | RGX REPL -n -f -i | .       | .
-    .         | Search    | RGX -g -a         | .       | .
-    .         | FindAll   | RGX               | .       | .
-    Run       | .         | .                 | .       | .
-    .         | Run       | CODE -i           | .       | .
-    JSON      | .         | .                 | .       | .
-    .         | JsonD     | I                 | .       | .
-    .         | JsonL     | I                 | add     | .
-    String    | .         | .                 | .       | .
-    .         | Format    | FMT               | add     | Return FMT.format(*ln.val OR **ln.val).
-    .         | Upper     | .                 | add     | .
-    .         | Lower     | .                 | add     | .
-    .         | Replace   | OLD NEW -n        | add     | .
-    Sequence  | .         | .                 | .       | ###
-    .         | Append    | .                 | add     | .
-    .         | Extend    | .                 | add     | .
-    .         | Insert    | .                 | add     | .
-    .         | Pop       | .                 | add     | .
-    .         | Remove    | .                 | add     | .
-    .         | Reverse   | .                 | add     | .
-    .         | Sort      | .                 | add     | .
-    .         | Count     | .                 | add     | ###
-    .         | Len       | .                 | add     | .
-    .         | Zip       | .                 | add     | .
-    Dict      | .         | .                 | .       | .
-    .         | Keys      | .                 | add     | .
-    .         | Values    | .                 | add     | .
-    .         | Items     | .                 | add     | .
-    .         | Update    | .                 | add     | Support JSON input.
-    FileOp    | .         | .                 | .       | Typically returns ln.val.
-    .         | Touch     | .                 | add     | .
-    .         | Write     | .                 | add     | Takes (VAL, PATH).
-    .         | MkDir     | .                 | add     | .
-    .         | RmDir     | .                 | add     | .
-    .         | Rm        | .                 | add     | .
-    .         | Mv        | .                 | add     | Takes (OLD, NEW).
-    Path      | .         | .                 | .       | .
-    .         | DirPath   | .                 | add     | .
-    .         | FileName  | .                 | add     | .
-    .         | BaseName  | .                 | add     | .
-    .         | Extension | .                 | add     | .
-    Math      | .         | .                 | .       | .
-    .         | Abs       | .                 | add     | .
-    .         | Round     | .                 | add     | .
-    .         | DivMod    | .                 | add     | .
-    .         | Pow       | .                 | add     | .
-    GetSet    | .         | .                 | .       | .
-    .         | GetAttr   | .                 | add     | .
-    .         | SetAttr   | .                 | add     | .
-    .         | HasAttr   | .                 | add     | .
-    .         | GetItem   | .                 | add     | .
-    .         | SetItem   | .                 | add     | .
-    .         | HasItem   | .                 | add     | .
-    Group     | .         | .                 | .       | .
-    .         | Para      | .                 | add     | .
+    Group     | Step          | Status  | Notes
+    -------------------------------------------
+    Write     | .             | .       | .
+    .         | Pr            | .       | .
+    .         | Wr            | .       | .
+    Strip     | .             | .       | .
+    .         | Chomp         | .       | .
+    .         | Strip         | .       | .
+    .         | LStrip        | .       | .
+    .         | RStrip        | .       | .
+    Split     | .             | .       | .
+    .         | Split         | enhance | Support S.split(SEP, MAX).
+    .         | RSplit        | add     | .
+    .         | Join          | .       | .
+    Index     | .             | .       | .
+    .         | Index         | enhance | See notes.
+    .         | RIndex        | enhance | See notes.
+    .         | Range         | .       | .
+    .         | Cols          | add     | Grab cols from record.
+    Select    | .             | .       | .
+    .         | Head          | .       | .
+    .         | Tail          | add     | .
+    .         | Middle        | add     | .
+    .         | Lines         | add     | See notes.
+    .         | Skip          | .       | .
+    .         | Limit         | .       | Emit no more than N values.
+    .         | FlipFlop      | enhance | See notes.
+    .         | Grep          | .       | .
+    .         | Uniq          | add     | Main a set. Emit only unseen values.
+    .         | Sample        | add     | See MPC draw.sample.basic.pl.
+    Aggregate | .             | .       | .
+    .         | Freq          | enhance | See notes.
+    .         | Cross         | add     | See notes.
+    .         | Sum           | .       | .
+    .         | Min           | add     | .
+    .         | Max           | add     | .
+    .         | Count         | add     | See notes.
+    .         | Wc            | add     | .
+    Convert   | .             | .       | .
+    .         | Str           | .       | .
+    .         | Int           | .       | .
+    .         | Float         | .       | .
+    .         | List          | add     | .
+    .         | Dict          | add     | .
+    .         | Set           | add     | .
+    .         | Tuple         | add     | .
+    .         | Bytes         | add     | .
+    .         | Bool          | add     | .
+    Search    | .             | .       | .
+    .         | Sub           | .       | .
+    .         | Search        | .       | .
+    .         | FindAll       | .       | .
+    Run       | .             | .       | .
+    .         | Run           | .       | .
+    .         | Eval          | add     | Emit eval(ln.val)
+    JSON      | .             | .       | .
+    .         | JsonD         | .       | .
+    .         | JsonL         | add     | .
+    String    | .             | .       | .
+    .         | Format        | add     | Return FMT.format(*ln.val OR **ln.val).
+    .         | Upper         | add     | .
+    .         | Lower         | add     | .
+    .         | Replace       | add     | .
+    .         | Nl            | .       | .
+    .         | Prefix        | .       | .
+    .         | Suffix        | .       | .
+    .         | Pad           | add     | Left, right, both.
+    .         | Center        | add     | .
+    .         | Wrap          | add     | .
+    .         | FileName      | add     | File name prefix (like grep).
+    .         | LineNum       | add     | Similar to FileName.
+    Sequence  | .             | .       | See notes.
+    .         | Append        | add     | .
+    .         | Extend        | add     | .
+    .         | Insert        | add     | .
+    .         | Pop           | add     | .
+    .         | Remove        | add     | .
+    .         | Reverse       | add     | .
+    .         | Sort          | add     | .
+    .         | Count         | add     | See notes.
+    .         | Len           | add     | .
+    .         | Zip           | add     | .
+    Dict      | .             | .       | .
+    .         | Keys          | add     | .
+    .         | Values        | add     | .
+    .         | Items         | add     | .
+    .         | Update        | add     | Support JSON input.
+    .         | Dive          | add     | Dict diving (also sequence).
+    FileOp    | .             | .       | Typically returns ln.val.
+    .         | Touch         | add     | .
+    .         | Write         | add     | Takes (VAL, PATH).
+    .         | MkDir         | add     | .
+    .         | RmDir         | add     | .
+    .         | Rm            | add     | .
+    .         | Mv            | add     | Takes (OLD, NEW).
+    Path      | .             | .       | .
+    .         | DirPath       | add     | .
+    .         | FileName      | add     | .
+    .         | BaseName      | add     | .
+    .         | Extension     | add     | .
+    Math      | .             | .       | .
+    .         | Abs           | add     | .
+    .         | Round         | add     | .
+    .         | DivMod        | add     | .
+    .         | Pow           | add     | .
+    GetSet    | .             | .       | .
+    .         | GetAttr       | add     | .
+    .         | SetAttr       | add     | .
+    .         | HasAttr       | add     | .
+    .         | GetItem       | add     | .
+    .         | SetItem       | add     | .
+    .         | HasItem       | add     | .
+    Group     | .             | .       | .
+    .         | Para          | add     | .
+    FileConv  | .             | .       | .
+    .         | ConvertRecord | add     | See notes.
 
 Notes:
 
@@ -424,32 +437,29 @@ Notes:
            partial | yes          | no
            none    | no           | no
 
-Misc:
-    - wc
-    - uniq       # Maintain a set: forward only unseen ln.val.
-    - pad        # Right or left
-    - cols       # Grab cols out of a record: START, WIDTH
-    - dive       # Dict diving
-    - eval       # emit eval(ln.val)
-    - sample     # See MPC draw.sample.basic.pl
-    - wrap
-    - filename
-    - linenumber
+    Freq, Cross:
+        - Inputs: single values or tuples/lists:
+            - Single: basic freq behavior.
+            - Tuples: freq for each position in the tuple.
+        - Options to control output:
+            - format string : '{key} : {n}'
+            - swap: same, but with n on left.
+            - sort: regular or reverse.
+            - vsor: regular or reverse.
 
-freq and cross:
-    - Single vals or tuples/lists:
-        - Single: basic freq.
-        - Tuples: freq for each position in the tuple.
-    - Options to control output:
-        - format string : '{key} : {n}'
-        - swap: same, but with n on left
-        - sort   # regular or reverse
-        - vsort  # regular or reverse
-    - cross:
-        - Implement in a parallel fashion.
+    ConvertRecord:
+        - Record conversions back and forth among:
+            - Fixed width.
+            - Delimited.
+            - JSON/YAML.
 
-File conversions back and forth among:
-    - Fixed with
-    - Delimited
-    - JSON/YAML   # With structures compatible with row-oriented data.
+Step:
+
+    - Groups: ...
+
+    - Usage:
+
+        .Step ...
+
+    - Notes:
 

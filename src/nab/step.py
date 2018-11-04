@@ -5,6 +5,7 @@ import sys
 class Step(object):
 
     NAME = None
+    GROUPS = []
     DESC = None
     OPTS_CONFIG = None
 

@@ -2,11 +2,10 @@
 Planning
 --------
 
-Add/improve Steps:
-    - [see notes].
-    - Evaluate current steps (eg naming and other conventions).
-    - Sketch usage and naming for all steps in the roadmap.
-    - Decide about naming conflicts: eg Count.
+Steps [see notes]:
+    - Sketch usage and naming for all proposed steps.
+    - Evaluate naming and other conventions.
+    - Decide how to handle naming conflicts: eg Count and FileName.
 
 Roadmap: finalize.
 
