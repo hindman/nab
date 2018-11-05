@@ -15,6 +15,8 @@ Core
 
 Rename phases [see notes].
 
+Convert OPTS_CONFIG and GROUPS to method so they can be overridden more naturally.
+
 Unicode handling [see notes].
 
 Support steps that collect values [see notes].

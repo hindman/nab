@@ -287,11 +287,32 @@ Provide user an option to control encodings.
 Add/improve Steps
 --------
 
+Groups:
+
+    Print
+    Strip
+    Split
+    Index
+    Select
+    Aggregate
+    Convert
+    Search
+    Run
+    String
+    Sequence
+    Dict
+    FileOp
+    Path
+    Math
+    GetSet
+    Group
+    FileConv
+
 Steps:
 
     Group     | Step          | Status  | Notes
     -------------------------------------------
-    Write     | .             | .       | .
+    Print     | .             | .       | .
     .         | Pr            | .       | .
     .         | Wr            | .       | .
     Strip     | .             | .       | .
@@ -453,13 +474,583 @@ Notes:
             - Delimited.
             - JSON/YAML.
 
-Step:
+Step details:
 
-    - Groups: ...
+    Pr:
+        - Groups: Print
+        - Usage:
+            .pr
+            .pr --sep X --end X
+        - Notes: .
+            - The --file option not needed (handled by discover phase).
+            - And --flush seems not applicable.
 
-    - Usage:
+    Wr:
+        - Groups: Print
+        - Usage:
+            .wr
+        - Notes:
+            - Inherit from Pr and just change the default --end option.
 
-        .Step ...
+    Chomp:
+        - Groups: Strip, String
+        - Usage:
+            .chomp
+        - Notes: .
 
-    - Notes:
+    Strip:
+        - Groups: ...
+        - Usage:
+            .strip
+            .strip X
+            .strip X --rgx
+        - Notes:
+            - Default: behave like str.strip().
+            - Also support regex-based stripping.
+
+    LStrip:
+        - Groups: ...
+        - Usage:
+            .lstrip ...
+        - Notes:
+
+    RStrip:
+        - Groups: ...
+        - Usage:
+            .rstrip ...
+        - Notes:
+
+    Split:
+        - Groups: ...
+        - Usage:
+            .split ...
+        - Notes:
+
+    RSplit:
+        - Groups: ...
+        - Usage:
+            .rsplit ...
+        - Notes:
+
+    Join:
+        - Groups: ...
+        - Usage:
+            .join ...
+        - Notes:
+
+    Index:
+        - Groups: ...
+        - Usage:
+            .index ...
+        - Notes:
+
+    RIndex:
+        - Groups: ...
+        - Usage:
+            .rindex ...
+        - Notes:
+
+    Range:
+        - Groups: ...
+        - Usage:
+            .range ...
+        - Notes:
+
+    Cols:
+        - Groups: ...
+        - Usage:
+            .cols ...
+        - Notes:
+
+    Head:
+        - Groups: ...
+        - Usage:
+            .head ...
+        - Notes:
+
+    Tail:
+        - Groups: ...
+        - Usage:
+            .tail ...
+        - Notes:
+
+    Middle:
+        - Groups: ...
+        - Usage:
+            .middle ...
+        - Notes:
+
+    Lines:
+        - Groups: ...
+        - Usage:
+            .lines ...
+        - Notes:
+
+    Skip:
+        - Groups: ...
+        - Usage:
+            .skip ...
+        - Notes:
+
+    Limit:
+        - Groups: ...
+        - Usage:
+            .limit ...
+        - Notes:
+
+    FlipFlop:
+        - Groups: ...
+        - Usage:
+            .flipflop ...
+        - Notes:
+
+    Grep:
+        - Groups: ...
+        - Usage:
+            .grep ...
+        - Notes:
+
+    Uniq:
+        - Groups: ...
+        - Usage:
+            .uniq ...
+        - Notes:
+
+    Sample:
+        - Groups: ...
+        - Usage:
+            .sample ...
+        - Notes:
+
+    Freq:
+        - Groups: ...
+        - Usage:
+            .freq ...
+        - Notes:
+
+    Cross:
+        - Groups: ...
+        - Usage:
+            .cross ...
+        - Notes:
+
+    Sum:
+        - Groups: ...
+        - Usage:
+            .sum ...
+        - Notes:
+
+    Min:
+        - Groups: ...
+        - Usage:
+            .min ...
+        - Notes:
+
+    Max:
+        - Groups: ...
+        - Usage:
+            .max ...
+        - Notes:
+
+    Count:
+        - Groups: ...
+        - Usage:
+            .count ...
+        - Notes:
+
+    Wc:
+        - Groups: ...
+        - Usage:
+            .wc ...
+        - Notes:
+
+    Str:
+        - Groups: ...
+        - Usage:
+            .str ...
+        - Notes:
+
+    Int:
+        - Groups: ...
+        - Usage:
+            .int ...
+        - Notes:
+
+    Float:
+        - Groups: ...
+        - Usage:
+            .float ...
+        - Notes:
+
+    List:
+        - Groups: ...
+        - Usage:
+            .list ...
+        - Notes:
+
+    Dict:
+        - Groups: ...
+        - Usage:
+            .dict ...
+        - Notes:
+
+    Set:
+        - Groups: ...
+        - Usage:
+            .set ...
+        - Notes:
+
+    Tuple:
+        - Groups: ...
+        - Usage:
+            .tuple ...
+        - Notes:
+
+    Bytes:
+        - Groups: ...
+        - Usage:
+            .bytes ...
+        - Notes:
+
+    Bool:
+        - Groups: ...
+        - Usage:
+            .bool ...
+        - Notes:
+
+    Sub:
+        - Groups: ...
+        - Usage:
+            .sub ...
+        - Notes:
+
+    Search:
+        - Groups: ...
+        - Usage:
+            .search ...
+        - Notes:
+
+    FindAll:
+        - Groups: ...
+        - Usage:
+            .findall ...
+        - Notes:
+
+    Run:
+        - Groups: ...
+        - Usage:
+            .run ...
+        - Notes:
+
+    Eval:
+        - Groups: ...
+        - Usage:
+            .eval ...
+        - Notes:
+
+    JsonD:
+        - Groups: ...
+        - Usage:
+            .jsond ...
+        - Notes:
+
+    JsonL:
+        - Groups: ...
+        - Usage:
+            .jsonl ...
+        - Notes:
+
+    Format:
+        - Groups: ...
+        - Usage:
+            .format ...
+        - Notes:
+
+    Upper:
+        - Groups: ...
+        - Usage:
+            .upper ...
+        - Notes:
+
+    Lower:
+        - Groups: ...
+        - Usage:
+            .lower ...
+        - Notes:
+
+    Replace:
+        - Groups: ...
+        - Usage:
+            .replace ...
+        - Notes:
+
+    Nl:
+        - Groups: ...
+        - Usage:
+            .nl ...
+        - Notes:
+
+    Prefix:
+        - Groups: ...
+        - Usage:
+            .prefix ...
+        - Notes:
+
+    Suffix:
+        - Groups: ...
+        - Usage:
+            .suffix ...
+        - Notes:
+
+    Pad:
+        - Groups: ...
+        - Usage:
+            .pad ...
+        - Notes:
+
+    Center:
+        - Groups: ...
+        - Usage:
+            .center ...
+        - Notes:
+
+    Wrap:
+        - Groups: ...
+        - Usage:
+            .wrap ...
+        - Notes:
+
+    FileName:
+        - Groups: ...
+        - Usage:
+            .filename ...
+        - Notes:
+
+    LineNum:
+        - Groups: ...
+        - Usage:
+            .linenum ...
+        - Notes:
+
+    Append:
+        - Groups: ...
+        - Usage:
+            .append ...
+        - Notes:
+
+    Extend:
+        - Groups: ...
+        - Usage:
+            .extend ...
+        - Notes:
+
+    Insert:
+        - Groups: ...
+        - Usage:
+            .insert ...
+        - Notes:
+
+    Pop:
+        - Groups: ...
+        - Usage:
+            .pop ...
+        - Notes:
+
+    Remove:
+        - Groups: ...
+        - Usage:
+            .remove ...
+        - Notes:
+
+    Reverse:
+        - Groups: ...
+        - Usage:
+            .reverse ...
+        - Notes:
+
+    Sort:
+        - Groups: ...
+        - Usage:
+            .sort ...
+        - Notes:
+
+    Count:
+        - Groups: ...
+        - Usage:
+            .count ...
+        - Notes:
+
+    Len:
+        - Groups: ...
+        - Usage:
+            .len ...
+        - Notes:
+
+    Zip:
+        - Groups: ...
+        - Usage:
+            .zip ...
+        - Notes:
+
+    Keys:
+        - Groups: ...
+        - Usage:
+            .keys ...
+        - Notes:
+
+    Values:
+        - Groups: ...
+        - Usage:
+            .values ...
+        - Notes:
+
+    Items:
+        - Groups: ...
+        - Usage:
+            .items ...
+        - Notes:
+
+    Update:
+        - Groups: ...
+        - Usage:
+            .update ...
+        - Notes:
+
+    Dive:
+        - Groups: ...
+        - Usage:
+            .dive ...
+        - Notes:
+
+    Touch:
+        - Groups: ...
+        - Usage:
+            .touch ...
+        - Notes:
+
+    Write:
+        - Groups: ...
+        - Usage:
+            .write ...
+        - Notes:
+
+    MkDir:
+        - Groups: ...
+        - Usage:
+            .mkdir ...
+        - Notes:
+
+    RmDir:
+        - Groups: ...
+        - Usage:
+            .rmdir ...
+        - Notes:
+
+    Rm:
+        - Groups: ...
+        - Usage:
+            .rm ...
+        - Notes:
+
+    Mv:
+        - Groups: ...
+        - Usage:
+            .mv ...
+        - Notes:
+
+    DirPath:
+        - Groups: ...
+        - Usage:
+            .dirpath ...
+        - Notes:
+
+    FileName:
+        - Groups: ...
+        - Usage:
+            .filename ...
+        - Notes:
+
+    BaseName:
+        - Groups: ...
+        - Usage:
+            .basename ...
+        - Notes:
+
+    Extension:
+        - Groups: ...
+        - Usage:
+            .extension ...
+        - Notes:
+
+    Abs:
+        - Groups: ...
+        - Usage:
+            .abs ...
+        - Notes:
+
+    Round:
+        - Groups: ...
+        - Usage:
+            .round ...
+        - Notes:
+
+    DivMod:
+        - Groups: ...
+        - Usage:
+            .divmod ...
+        - Notes:
+
+    Pow:
+        - Groups: ...
+        - Usage:
+            .pow ...
+        - Notes:
+
+    GetAttr:
+        - Groups: ...
+        - Usage:
+            .getattr ...
+        - Notes:
+
+    SetAttr:
+        - Groups: ...
+        - Usage:
+            .setattr ...
+        - Notes:
+
+    HasAttr:
+        - Groups: ...
+        - Usage:
+            .hasattr ...
+        - Notes:
+
+    GetItem:
+        - Groups: ...
+        - Usage:
+            .getitem ...
+        - Notes:
+
+    SetItem:
+        - Groups: ...
+        - Usage:
+            .setitem ...
+        - Notes:
+
+    HasItem:
+        - Groups: ...
+        - Usage:
+            .hasitem ...
+        - Notes:
+
+    Para:
+        - Groups: ...
+        - Usage:
+            .para ...
+        - Notes:
+
+    ConvertRecord:
+        - Groups: ...
+        - Usage:
+            .convertrecord ...
+        - Notes:
 
