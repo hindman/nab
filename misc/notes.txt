@@ -496,59 +496,48 @@ Step details:
         - Groups: Strip, String
         - Usage:
             .chomp
-        - Notes: .
 
     Strip:
-        - Groups: ...
+        - Groups: Strip, String
         - Usage:
             .strip
             .strip X
-            .strip X --rgx
+            .strip X --use-rgx
         - Notes:
             - Default: behave like str.strip().
             - Also support regex-based stripping.
 
     LStrip:
-        - Groups: ...
-        - Usage:
-            .lstrip ...
-        - Notes:
+        - Notes: see Strip.
 
     RStrip:
-        - Groups: ...
-        - Usage:
-            .rstrip ...
-        - Notes:
+        - Notes: see Strip.
 
     Split:
-        - Groups: ...
+        - Groups: Split.
         - Usage:
-            .split ...
+            .split
+            .split SEP
+            .split SEP --max-split N
         - Notes:
 
     RSplit:
-        - Groups: ...
-        - Usage:
-            .rsplit ...
-        - Notes:
+        - Notes: see Split.
 
     Join:
-        - Groups: ...
+        - Groups: Split.
         - Usage:
-            .join ...
+            .join [STR]
         - Notes:
+            - Returns STR.join(ln.val)
 
     Index:
-        - Groups: ...
-        - Usage:
-            .index ...
-        - Notes:
+        - Notes: synonym for GetItem.
 
     RIndex:
-        - Groups: ...
-        - Usage:
-            .rindex ...
-        - Notes:
+        - Notes: drop; not needed.
+
+    __HERE__
 
     Range:
         - Groups: ...
@@ -1025,10 +1014,9 @@ Step details:
         - Notes:
 
     GetItem:
-        - Groups: ...
+        - Groups: GetSet, Index.
         - Usage:
-            .getitem ...
-        - Notes:
+            .getitem I [--strict]
 
     SetItem:
         - Groups: ...
