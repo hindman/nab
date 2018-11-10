@@ -51,8 +51,6 @@ Support BFS processing [see notes].
 
 Support parallel file processing [see notes].
 
-Pr(): support the print() options.
-
 Allow user to control input record separator (default = newline).
 
 Support .nabrc file [see notes].

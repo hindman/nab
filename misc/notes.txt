@@ -327,17 +327,16 @@ Steps:
     Index     | .             | .       | .
     .         | Index         | enhance | See notes.
     .         | RIndex        | enhance | See notes.
-    .         | Range         | .       | .
+    .         | Slice         | .       | .
     .         | Cols          | add     | Grab cols from record.
     Select    | .             | .       | .
     .         | Head          | .       | .
     .         | Tail          | add     | .
-    .         | Middle        | add     | .
     .         | Lines         | add     | See notes.
     .         | Skip          | .       | .
     .         | Limit         | .       | Emit no more than N values.
     .         | FlipFlop      | enhance | See notes.
-    .         | Grep          | .       | .
+    .         | Grep          | enhance | See notes.
     .         | Uniq          | add     | Main a set. Emit only unseen values.
     .         | Sample        | add     | See MPC draw.sample.basic.pl.
     Aggregate | .             | .       | .
@@ -429,50 +428,12 @@ Steps:
 
 Notes:
 
-    Index, RIndex:
-        - Take 1+ indexes.
-        - If more than 1, return a tuple.
-
-    Count:
-        - Naming collision: Aggregate.Count and Sequence.Count.
-
     Sequence:
         - Supported types: list, tuple, sometimes str, sometimes dict.
         - Functions take VAL: support common conversion (eg int) and JSON input.
         - Return mutated sequence: eg Remove, Sort.
         - Remove: support --all.
         - Sort: support --key option that takes code.
-
-    Lines:
-        - Selects lines by line-number.
-        - Input can take various forms: int, range, etc.
-
-    FlipFlop:
-        - Allow ON and then OFF checks to occur on same line.
-        - Support line number mode for rgx1 and/or rgx2: in this case
-          the ON/OFF logic is based on line numbers.
-        - Allow options to govern inclusiveness:
-                     1st ON line  | 1st OFF line
-           ------------------------------------------------------
-           full    | yes          | yes            # Perl default
-           partial | yes          | no
-           none    | no           | no
-
-    Freq, Cross:
-        - Inputs: single values or tuples/lists:
-            - Single: basic freq behavior.
-            - Tuples: freq for each position in the tuple.
-        - Options to control output:
-            - format string : '{key} : {n}'
-            - swap: same, but with n on left.
-            - sort: regular or reverse.
-            - vsor: regular or reverse.
-
-    ConvertRecord:
-        - Record conversions back and forth among:
-            - Fixed width.
-            - Delimited.
-            - JSON/YAML.
 
 Step details:
 
@@ -537,76 +498,100 @@ Step details:
     RIndex:
         - Notes: drop; not needed.
 
-    __HERE__
-
     Range:
-        - Groups: ...
-        - Usage:
-            .range ...
-        - Notes:
+        - Notes: rename to Slice.
 
-    Cols:
-        - Groups: ...
+    Slice:
+        - Groups: Index.
+        - Usage:
+            .slice STOP
+            .slice START STOP
+            .slice START STOP STEP
+            .slice [--start X] [--stop Y] [--step Z]
+        - Notes:
+            - return ln.val[SLICE]
+
+    Cols: TODO.
+        - Groups: Index.
         - Usage:
             .cols ...
         - Notes:
 
     Head:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
-            .head ...
+            .head [N]
         - Notes:
+            - A Head step means emit the first N vals seen by that step.
+            - Does not mean: emit only vals from the first N lines of the file.
+            - Use Lines for the latter use case.
 
     Tail:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
-            .tail ...
+            .tail [N]
         - Notes:
-
-    Middle:
-        - Groups: ...
-        - Usage:
-            .middle ...
-        - Notes:
+            - Hold the last N vals in memory.
+            - Emit them during finalize-phase.
 
     Lines:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
-            .lines ...
+            .lines N
+            .lines START:STOP:STEP
+            .lines FIRST..LAST
+            .lines FIRST,N
         - Notes:
+            - The step takes 1+ arguments.
+            - The supported argument types can be mixed and matched.
+            - Line numbering starts at 1.
 
     Skip:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
-            .skip ...
+            .skip N
         - Notes:
+            - Like Head: skips the first N vals its sees.
 
     Limit:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
-            .limit ...
+            .limit N
         - Notes:
+            - Emit no more than N vals.
+
+    __HERE__ : also see TODO.
 
     FlipFlop:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
             .flipflop ...
         - Notes:
+            - Allow ON and then OFF checks to occur on same line.
+            - Support line number mode for rgx1 and/or rgx2: in this case
+              the ON/OFF logic is based on line numbers.
+            - Allow options to govern inclusiveness:
+                         1st ON line  | 1st OFF line
+               ------------------------------------------------------
+               full    | yes          | yes            # Perl default
+               partial | yes          | no
+               none    | no           | no
 
     Grep:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
             .grep ...
         - Notes:
+            - Also see notes above regarding enhancements.
 
     Uniq:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
             .uniq ...
         - Notes:
 
     Sample:
-        - Groups: ...
+        - Groups: Select.
         - Usage:
             .sample ...
         - Notes:
@@ -616,6 +601,14 @@ Step details:
         - Usage:
             .freq ...
         - Notes:
+            - Inputs: single values or tuples/lists:
+                - Single: basic freq behavior.
+                - Tuples: freq for each position in the tuple.
+            - Options to control output:
+                - format string : '{key} : {n}'
+                - swap: same, but with n on left.
+                - sort: regular or reverse.
+                - vsor: regular or reverse.
 
     Cross:
         - Groups: ...
@@ -646,6 +639,7 @@ Step details:
         - Usage:
             .count ...
         - Notes:
+            - Deal with naming collision: Aggregate.Count and Sequence.Count.
 
     Wc:
         - Groups: ...
@@ -730,6 +724,7 @@ Step details:
         - Usage:
             .run ...
         - Notes:
+            - Also see notes above regarding enhancements.
 
     Eval:
         - Groups: ...
@@ -1016,7 +1011,10 @@ Step details:
     GetItem:
         - Groups: GetSet, Index.
         - Usage:
-            .getitem I [--strict]
+            .getitem INDEX... [--strict]
+        - Notes:
+            - If 1 INDEX, returns it.
+            - If multiple, returns a tuple.
 
     SetItem:
         - Groups: ...
@@ -1041,4 +1039,6 @@ Step details:
         - Usage:
             .convertrecord ...
         - Notes:
+            - Record conversions among various file types.
+            - Support: fixed-width, delimited, JSON/YAML.
 
