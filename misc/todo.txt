@@ -29,7 +29,9 @@ Add Step.context [see notes].
 Later
 --------
 
-Run(): support all phases [see notes].
+Run(): enhance.
+
+Grep(): enhance.
 
 Support leading-dot syntax and --step-mode option [see notes].
 
@@ -56,8 +58,6 @@ Allow user to control input record separator (default = newline).
 Support .nabrc file [see notes].
 
 DataDict() helper class for positional data processing [see notes].
-
-Grep(): enhance [see notes].
 
 Dryrun support [see notes].
 

@@ -20,6 +20,36 @@ Where:
 
 
 --------
+Terminology
+--------
+
+Terminology:
+
+    - Run: end-to-end execution of nab.
+    - Phase: the major subsections of a run.
+    - Step: user-supplied parts of the processing pipeline.
+
+Phase names considered:
+
+    Current    | Explicit       | Alt1     | Alt2       | Alt2       | .
+    -------------------------------------------------------------------------
+    begin      | begin          | begin    | configure  | begin      | .
+    discover   | discover_files | discover | discover   | discover   | .
+    file_begin | begin_file     | prepare  | initialize | initialize | .
+    run        | process_value  | process  | process    | process    | .
+    file_end   | end_file       | wrapup   | finalize   | finalize   | .
+    end        | end            | end      | end        | end        | .
+
+Decision:
+
+    begin      | Steps configure themselves.
+    discover   | Steps can be used for file discovery.
+    initialize | Steps can initialize at the start of a file.
+    process    | Process one value.
+    finalize   | The end-of-file extension of the process-phase.
+    end        | Emit final outputs.
+
+--------
 Support paths via several mechanisms
 --------
 
@@ -72,24 +102,6 @@ NabRgx:
 
     rgx = NabRgx(...)
     return iff(rgx.search(TXT), rgx[1], None)
-
---------
-Run(): check and enhance
---------
-
-    - Support other phases and allow CODE for process-phase to be optional.
-
-        --step run [CODE]
-               [--discover CODE]
-               [--initialize CODE]
-               [--process CODE]
-               [--finalize CODE]
-               [--end CODE]
-               [-i N]
-
-    - Confirm can support indented input.
-
-    - Confirm multiple `-s run` can be used in the same execution.
 
 --------
 Steps that collect values
@@ -196,34 +208,6 @@ DataDict() helper class for positional data processing
     - See MPC scripts for use cases.
 
 --------
-Grep() enhance
---------
-
-    Regexp selection and interpretation:
-
-      -F, --fixed-strings       PATTERN is a set of newline-separated fixed strings
-      -Q, --literal             Quote all metacharacters; PATTERN is literal
-
-      -w, --word-regexp         force PATTERN to match only whole words
-      -x, --line-regexp         force PATTERN to match only whole lines
-
-    Context control:
-      -B, --before-context=NUM  print NUM lines of leading context
-      -A, --after-context=NUM   print NUM lines of trailing context
-      -C, --context=NUM         print NUM lines of output context
-
-    Search output:
-      --lines=NUM                   Only print line(s) NUM of each file
-      -m, --max-count=NUM           Stop searching in each file after NUM matches
-      -1                            Stop searching after one match of any kind
-
-      -L, --files-without-match     print only names of FILEs containing no match
-      -l, --files-with-matches      print only names of FILEs containing matches
-
-    Use case from MPC scripts:
-        If rgx matches, emit location information: file, linenum, position.
-
---------
 Dryrun support
 --------
 
@@ -237,36 +221,6 @@ Example use cases:
           subdirectories, as needed).
 
     - When performing any file-system operations: rm, touch, etc.
-
---------
-Terminology
---------
-
-Terminology:
-
-    - Run: end-to-end execution of nab.
-    - Phase: the major subsections of a run.
-    - Step: user-supplied parts of the processing pipeline.
-
-Phase names considered:
-
-    Current    | Explicit       | Alt1     | Alt2       | Alt2       | .
-    -------------------------------------------------------------------------
-    begin      | begin          | begin    | configure  | begin      | .
-    discover   | discover_files | discover | discover   | discover   | .
-    file_begin | begin_file     | prepare  | initialize | initialize | .
-    run        | process_value  | process  | process    | process    | .
-    file_end   | end_file       | wrapup   | finalize   | finalize   | .
-    end        | end            | end      | end        | end        | .
-
-Decision:
-
-    begin      | Steps configure themselves.
-    discover   | Steps can be used for file discovery.
-    initialize | Steps can initialize at the start of a file.
-    process    | Process one value.
-    finalize   | The end-of-file extension of the process-phase.
-    end        | Emit final outputs.
 
 --------
 Unicode handling
@@ -340,13 +294,13 @@ Steps:
     .         | Uniq          | add     | Main a set. Emit only unseen values.
     .         | Sample        | add     | See MPC draw.sample.basic.pl.
     Aggregate | .             | .       | .
-    .         | Freq          | enhance | See notes.
-    .         | Cross         | add     | See notes.
     .         | Sum           | .       | .
     .         | Min           | add     | .
     .         | Max           | add     | .
-    .         | Count         | add     | See notes.
+    .         | ValCount      | add     | See notes.
     .         | Wc            | add     | .
+    .         | Freq          | enhance | See notes.
+    .         | Cross         | add     | See notes.
     Convert   | .             | .       | .
     .         | Str           | .       | .
     .         | Int           | .       | .
@@ -511,11 +465,20 @@ Step details:
         - Notes:
             - return ln.val[SLICE]
 
-    Cols: TODO.
+    Cols:
         - Groups: Index.
         - Usage:
             .cols ...
+            .cols N
+            .cols START:STOP
+            .cols FIRST..LAST
+            .cols FIRST,N
         - Notes:
+            - Very similar to Lines, but without STEP.
+            - The step takes 1+ arguments.
+            - The supported argument types can be mixed and matched.
+            - Emits an N-tuple, where N equals the number of arguments to the step.
+            - Column numbering starts at 1.
 
     Head:
         - Groups: Select.
@@ -560,44 +523,100 @@ Step details:
         - Notes:
             - Emit no more than N vals.
 
-    __HERE__ : also see TODO.
-
     FlipFlop:
         - Groups: Select.
         - Usage:
-            .flipflop ...
+            .flipflop START STOP [--line-numbers LN] [--inclusive IN]
         - Notes:
-            - Allow ON and then OFF checks to occur on same line.
-            - Support line number mode for rgx1 and/or rgx2: in this case
-              the ON/OFF logic is based on line numbers.
-            - Allow options to govern inclusiveness:
-                         1st ON line  | 1st OFF line
-               ------------------------------------------------------
-               full    | yes          | yes            # Perl default
-               partial | yes          | no
-               none    | no           | no
+            - By default, START and STOP triggers are regex-based.
+            - LN for line-number triggers: none (default), start, stop, both.
+            - IN controls inclusivity: none, start (default), stop, both (Perl default).
+            - Both triggers can fire on the same line.
 
     Grep:
         - Groups: Select.
         - Usage:
-            .grep ...
+            .grep RGX... [OPTIONS]
         - Notes:
-            - Also see notes above regarding enhancements.
+            - Takes 1+ regexes.
+            - Emits vals satisfing the regexes-plus-options.
+            - See grep/ack for conventional single-letter options.
+            - Options:
+                --all               Emit only if all REGEXS match (default: any).
+                --invert-match      Emit vals that do NOT match.
+                --ignore-case       Ignore case.
+                --literal           Quote all metacharacters; PATTERN is literal.
+                --word-regex        Force PATTERN to match only whole words.
+                --line-regex        Force PATTERN to match only whole lines.
+                --before-context N  Also emit N lines before the match.
+                --after-context N   Same idea.
+                --context N         Same idea.
+                --lines N           Emit no more than N vals from each file.
+                --max-count N       Emit no more than N vals overall.
+                --positions         Emit (line, position).
 
     Uniq:
         - Groups: Select.
         - Usage:
-            .uniq ...
+            .uniq [--scope S] [--repeated] [--ignore-case]
         - Notes:
+            - By default, Uniq evaluates adjacent values in the stream and
+              emits only one of any adjacent set of duplicates.
+            - The --scope option (file or all) widens the uniqueness check
+              to a whole file or the entire stream. This option requires
+              holding a set of vals seen.
+            - The --repeated option inverts the logic: emits a val only
+              if is a duplicate (and only once).
 
-    Sample:
+    Sample: TODO
         - Groups: Select.
         - Usage:
             .sample ...
         - Notes:
 
+    Sum:
+        - Groups: Aggregate.
+        - Usage:
+            .sum
+        - Notes:
+            - Prints TOTAL during end-phase.
+            - Supports any data types that handles += operator.
+
+    Min:
+        - Groups: Aggregate.
+        - Usage:
+            .min ...
+        - Notes:
+            - Prints MIN during end-phase.
+            - Supports any data types that handles > operator.
+
+    Max:
+        - Notes: see Min.
+
+    ValCount:
+        - Groups: Aggregate.
+        - Usage:
+            .valcount
+        - Notes:
+            - Counts the N of values it sees.
+            - Prints N during end-phase.
+
+    Wc:
+        - Groups: Aggregate.
+        - Usage:
+            .wc
+            .wc lines|words|chars|bytes...
+            .wc [--lines] [--words] [--chars] [--bytes]
+        - Notes:
+            - Counts the vals it sees.
+            - Prints totals during end-phase.
+            - Default output (LINES, WORDS, CHARS, BYTES).
+            - Or user can request specific tallies via options or args.
+
+    __HERE__ : also see TODO.
+
     Freq:
-        - Groups: ...
+        - Groups: Aggregate.
         - Usage:
             .freq ...
         - Notes:
@@ -611,40 +630,9 @@ Step details:
                 - vsor: regular or reverse.
 
     Cross:
-        - Groups: ...
+        - Groups: Aggregate.
         - Usage:
             .cross ...
-        - Notes:
-
-    Sum:
-        - Groups: ...
-        - Usage:
-            .sum ...
-        - Notes:
-
-    Min:
-        - Groups: ...
-        - Usage:
-            .min ...
-        - Notes:
-
-    Max:
-        - Groups: ...
-        - Usage:
-            .max ...
-        - Notes:
-
-    Count:
-        - Groups: ...
-        - Usage:
-            .count ...
-        - Notes:
-            - Deal with naming collision: Aggregate.Count and Sequence.Count.
-
-    Wc:
-        - Groups: ...
-        - Usage:
-            .wc ...
         - Notes:
 
     Str:
@@ -724,7 +712,16 @@ Step details:
         - Usage:
             .run ...
         - Notes:
-            - Also see notes above regarding enhancements.
+            - Support other phases and allow CODE for process-phase to be optional.
+                --step run [CODE]
+                       [--discover CODE]
+                       [--initialize CODE]
+                       [--process CODE]
+                       [--finalize CODE]
+                       [--end CODE]
+                       [-i N]
+            - Confirm can support indented input.
+            - Confirm multiple `-s run` can be used in the same execution.
 
     Eval:
         - Groups: ...
