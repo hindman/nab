@@ -613,96 +613,86 @@ Step details:
             - Default output (LINES, WORDS, CHARS, BYTES).
             - Or user can request specific tallies via options or args.
 
-    __HERE__ : also see TODO.
-
     Freq:
         - Groups: Aggregate.
         - Usage:
-            .freq ...
+            .freq [--mode MODE] [--format FMT] [--sort SORT] [--weighted]
         - Notes:
-            - Inputs: single values or tuples/lists:
-                - Single: basic freq behavior.
-                - Tuples: freq for each position in the tuple.
-            - Options to control output:
-                - format string : '{key} : {n}'
-                - swap: same, but with n on left.
-                - sort: regular or reverse.
-                - vsor: regular or reverse.
+            - Behavior:
+                - Collect frequency distribution(s) from the vals it sees.
+                - Prints during the end-phase.
+            - Frequency modes:
+                - MODE: regular|multi|cross (default: regular).
+                - Regular: expects a single value; one distribution.
+                - Multi: expects a tuple; a distribution per position in the sequence.
+                - Cross: expects a tuple; one distribution, using the tuple as the key.
+            - Weighted frequencies:
+                - Expects a (VAL, WEIGHT) tuple.
+                - VAL varies by MODE, as noted above.
+                - WEIGHT: weight values, with a parallel structure to VAL.
+            - Output control:
+                - FMT: fmt|json|yaml|csv|table.
+                - Defaults:
+                    - FMT of '{key} : {n}' (for basic frequencies).
+                    - FMT of 'table' (for crosstabs).
+                - Give more thought to how user can control tabular formats (TODO).
+                - Sorting:
+                    - By keys or vals, by ascending or descending.
+                    - SORT: kasc|kdesc|vasc|vdesc (default: kasc).
 
     Cross:
-        - Groups: Aggregate.
-        - Usage:
-            .cross ...
-        - Notes:
+        - Not needed; use Freq instead.
 
     Str:
-        - Groups: ...
+        - Groups: Convert.
         - Usage:
-            .str ...
+            .str
         - Notes:
-
-    Int:
-        - Groups: ...
-        - Usage:
-            .int ...
-        - Notes:
-
-    Float:
-        - Groups: ...
-        - Usage:
-            .float ...
-        - Notes:
-
-    List:
-        - Groups: ...
-        - Usage:
-            .list ...
-        - Notes:
-
-    Dict:
-        - Groups: ...
-        - Usage:
-            .dict ...
-        - Notes:
-
-    Set:
-        - Groups: ...
-        - Usage:
-            .set ...
-        - Notes:
-
-    Tuple:
-        - Groups: ...
-        - Usage:
-            .tuple ...
-        - Notes:
+            - Returns str(ln.val).
+            - Based on Python 3, where str means unicode-text and bytes means binary.
 
     Bytes:
-        - Groups: ...
-        - Usage:
-            .bytes ...
-        - Notes:
+        - Same form as Str.
+
+    Int:
+        - Same form as Str.
+        - Also supports a --base N option.
+
+    Float:
+        - Same form as Str.
+
+    List:
+        - Same form as Str.
+        - Also suppose --wrap option: returns [ln.val].
+
+    Tuple:
+        - Same form/options as List.
+
+    Set:
+        - Same form/options as List.
+
+    Dict:
+        - Same form as Str.
 
     Bool:
-        - Groups: ...
-        - Usage:
-            .bool ...
-        - Notes:
+        - Same form as Str.
+
+    __HERE__ : also see TODO
 
     Sub:
-        - Groups: ...
+        - Groups: Search.
         - Usage:
             .sub ...
         - Notes:
 
     Search:
-        - Groups: ...
+        - Groups: Search.
         - Usage:
             .search ...
         - Notes:
 
     FindAll:
-        - Groups: ...
+        - Groups: Search.
         - Usage:
             .findall ...
         - Notes:
