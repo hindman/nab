@@ -29,6 +29,8 @@ Terminology:
     - Phase: the major subsections of a run.
     - Step: user-supplied parts of the processing pipeline.
 
+    - NS-seq: a non-string sequence (typically tuple or list).
+
 Phase names considered:
 
     Current    | Explicit       | Alt1     | Alt2       | Alt2       | .
@@ -189,9 +191,35 @@ Support parallel file processing
 Support .nabrc file
 --------
 
-    --nabrc=filename              Specify an ackrc file to use
-    --[no]nabrc                   Ignore .nabrc.
-    --create-nabrc                Outputs a default nabrc to standard output.
+Some options related to nabrc file:
+
+    --nabrc [PATH]   Specify an ackrc file to use (or none if PATH not given).
+    --create-nabrc   Outputs a default nabrc to standard output.
+
+Format:
+    - Probably YAML.
+
+Behaviors of .nabrc:
+
+    - Set global options. For example:
+
+        step-mode: name
+        paths-stdin: MARKER
+
+    - Set Step options. For example:
+
+        Strip:
+            use-regex: true
+        FlipFlop:
+            inclusive: both
+
+    - Step naming to define aliases or resolve naming conflicts:
+
+        step-renames:
+            String.Count: StringCount
+
+        step-aliases:
+            String.Count: SCount
 
 --------
 DataDict() helper class for positional data processing
@@ -264,130 +292,125 @@ Groups:
 
 Steps:
 
-    Group     | Step          | Status  | Notes
-    -------------------------------------------
-    Print     | .             | .       | .
-    .         | Pr            | .       | .
-    .         | Wr            | .       | .
-    Strip     | .             | .       | .
-    .         | Chomp         | .       | .
-    .         | Strip         | .       | .
-    .         | LStrip        | .       | .
-    .         | RStrip        | .       | .
-    Split     | .             | .       | .
-    .         | Split         | enhance | Support S.split(SEP, MAX).
-    .         | RSplit        | add     | .
-    .         | Join          | .       | .
-    Index     | .             | .       | .
-    .         | Index         | enhance | See notes.
-    .         | RIndex        | enhance | See notes.
-    .         | Slice         | .       | .
-    .         | Cols          | add     | Grab cols from record.
-    Select    | .             | .       | .
-    .         | Head          | .       | .
-    .         | Tail          | add     | .
-    .         | Lines         | add     | See notes.
-    .         | Skip          | .       | .
-    .         | Limit         | .       | Emit no more than N values.
-    .         | FlipFlop      | enhance | See notes.
-    .         | Grep          | enhance | See notes.
-    .         | Uniq          | add     | Main a set. Emit only unseen values.
-    .         | Sample        | add     | See MPC draw.sample.basic.pl.
-    Aggregate | .             | .       | .
-    .         | Sum           | .       | .
-    .         | Min           | add     | .
-    .         | Max           | add     | .
-    .         | ValCount      | add     | See notes.
-    .         | Wc            | add     | .
-    .         | Freq          | enhance | See notes.
-    .         | Cross         | add     | See notes.
-    Convert   | .             | .       | .
-    .         | Str           | .       | .
-    .         | Int           | .       | .
-    .         | Float         | .       | .
-    .         | List          | add     | .
-    .         | Dict          | add     | .
-    .         | Set           | add     | .
-    .         | Tuple         | add     | .
-    .         | Bytes         | add     | .
-    .         | Bool          | add     | .
-    Search    | .             | .       | .
-    .         | Sub           | .       | .
-    .         | Search        | .       | .
-    .         | FindAll       | .       | .
-    Run       | .             | .       | .
-    .         | Run           | .       | .
-    .         | Eval          | add     | Emit eval(ln.val)
-    JSON      | .             | .       | .
-    .         | JsonD         | .       | .
-    .         | JsonL         | add     | .
-    String    | .             | .       | .
-    .         | Format        | add     | Return FMT.format(*ln.val OR **ln.val).
-    .         | Upper         | add     | .
-    .         | Lower         | add     | .
-    .         | Replace       | add     | .
-    .         | Nl            | .       | .
-    .         | Prefix        | .       | .
-    .         | Suffix        | .       | .
-    .         | Pad           | add     | Left, right, both.
-    .         | Center        | add     | .
-    .         | Wrap          | add     | .
-    .         | FileName      | add     | File name prefix (like grep).
-    .         | LineNum       | add     | Similar to FileName.
-    Sequence  | .             | .       | See notes.
-    .         | Append        | add     | .
-    .         | Extend        | add     | .
-    .         | Insert        | add     | .
-    .         | Pop           | add     | .
-    .         | Remove        | add     | .
-    .         | Reverse       | add     | .
-    .         | Sort          | add     | .
-    .         | Count         | add     | See notes.
-    .         | Len           | add     | .
-    .         | Zip           | add     | .
-    Dict      | .             | .       | .
-    .         | Keys          | add     | .
-    .         | Values        | add     | .
-    .         | Items         | add     | .
-    .         | Update        | add     | Support JSON input.
-    .         | Dive          | add     | Dict diving (also sequence).
-    FileOp    | .             | .       | Typically returns ln.val.
-    .         | Touch         | add     | .
-    .         | Write         | add     | Takes (VAL, PATH).
-    .         | MkDir         | add     | .
-    .         | RmDir         | add     | .
-    .         | Rm            | add     | .
-    .         | Mv            | add     | Takes (OLD, NEW).
-    Path      | .             | .       | .
-    .         | DirPath       | add     | .
-    .         | FileName      | add     | .
-    .         | BaseName      | add     | .
-    .         | Extension     | add     | .
-    Math      | .             | .       | .
-    .         | Abs           | add     | .
-    .         | Round         | add     | .
-    .         | DivMod        | add     | .
-    .         | Pow           | add     | .
-    GetSet    | .             | .       | .
-    .         | GetAttr       | add     | .
-    .         | SetAttr       | add     | .
-    .         | HasAttr       | add     | .
-    .         | GetItem       | add     | .
-    .         | SetItem       | add     | .
-    .         | HasItem       | add     | .
-    Group     | .             | .       | .
-    .         | Para          | add     | .
-    FileConv  | .             | .       | .
-    .         | ConvertRecord | add     | See notes.
-
-Notes:
-
-    Sequence:
-        - Supported types: list, tuple, sometimes str, sometimes dict.
-        - Functions take VAL: support common conversion (eg int) and JSON input.
-        - Return mutated sequence: eg Remove, Sort.
-        - Remove: support --all.
-        - Sort: support --key option that takes code.
+    Group     | Step
+    --------------------
+    Print     | .
+    .         | Pr
+    .         | Wr
+    Strip     | .
+    .         | Chomp
+    .         | Strip
+    .         | LStrip
+    .         | RStrip
+    Split     | .
+    .         | Split
+    .         | RSplit
+    .         | Join
+    Index     | .
+    .         | Index
+    .         | RIndex
+    .         | Slice
+    .         | Cols
+    Select    | .
+    .         | Head
+    .         | Tail
+    .         | Lines
+    .         | Skip
+    .         | Limit
+    .         | FlipFlop
+    .         | Grep
+    .         | Uniq
+    .         | Sample
+    Aggregate | .
+    .         | Sum
+    .         | Min
+    .         | Max
+    .         | ValCount
+    .         | Wc
+    .         | Freq
+    .         | Cross
+    Convert   | .
+    .         | Str
+    .         | Bytes
+    .         | Int
+    .         | Float
+    .         | List
+    .         | Tuple
+    .         | Set
+    .         | Dict
+    .         | Bool
+    Search    | .
+    .         | Sub
+    .         | Search
+    .         | FindAll
+    Run       | .
+    .         | Run
+    .         | Eval
+    JSON      | .
+    .         | JsonD
+    .         | JsonL
+    String    | .
+    .         | Format
+    .         | Upper
+    .         | Lower
+    .         | Replace
+    .         | Nl
+    .         | Prefix
+    .         | Suffix
+    .         | Center
+    .         | Ljust
+    .         | Rjust
+    .         | Wrap
+    .         | Fill
+    .         | Dedent
+    .         | LineMeta
+    Sequence  | .
+    .         | Append
+    .         | Extend
+    .         | Insert
+    .         | SliceAssign
+    .         | Pop
+    .         | Remove
+    .         | Reverse
+    .         | Sort
+    .         | Count
+    .         | Len
+    .         | Zip
+    Dict      | .
+    .         | Keys
+    .         | Values
+    .         | Items
+    .         | Update
+    .         | Dive
+    FileOp    | .
+    .         | Touch
+    .         | Write
+    .         | MkDir
+    .         | RmDir
+    .         | Rm
+    .         | Mv
+    Path      | .
+    .         | DirPath
+    .         | FileName
+    .         | BaseName
+    .         | Extension
+    Math      | .
+    .         | Abs
+    .         | Round
+    .         | DivMod
+    .         | Pow
+    GetSet    | .
+    .         | GetAttr
+    .         | SetAttr
+    .         | HasAttr
+    .         | GetItem
+    .         | SetItem
+    .         | HasItem
+    Group     | .
+    .         | Group
+    .         | Para
+    FileConv  | .
+    .         | ConvertRecord
 
 Step details:
 
@@ -573,6 +596,7 @@ Step details:
         - Usage:
             .sample ...
         - Notes:
+            - See MPC draw.sample.basic.pl.
 
     Sum:
         - Groups: Aggregate.
@@ -635,7 +659,7 @@ Step details:
                 - Defaults:
                     - FMT of '{key} : {n}' (for basic frequencies).
                     - FMT of 'table' (for crosstabs).
-                - Give more thought to how user can control tabular formats (TODO).
+                - Give more thought to how user can control tabular formats.
                 - Sorting:
                     - By keys or vals, by ascending or descending.
                     - SORT: kasc|kdesc|vasc|vdesc (default: kasc).
@@ -677,352 +701,388 @@ Step details:
     Bool:
         - Same form as Str.
 
-    __HERE__ : also see TODO
-
     Sub:
         - Groups: Search.
         - Usage:
-            .sub ...
+            .sub RGX REPL [--count N] [--re-opts REOPTS] [--function]
         - Notes:
+            - Returns RGX.sub(REPL, ln.val, count = N)
+            - If --function is set, REPL is treated as code.
+            - REOPTS: delimited names such as DOTALL, MULTILINE, IGNORECASE.
 
     Search:
         - Groups: Search.
         - Usage:
-            .search ...
+            .search RGX [GROUP] [--re-opts REOPTS]
         - Notes:
+            - Performs a regex search on ln.val.
+            - Returns groups(GROUP) or groups().
+            - Also see Sub.
 
     FindAll:
         - Groups: Search.
         - Usage:
-            .findall ...
+            .findall RGX [--re-opts REOPTS]
         - Notes:
+            - See Sub and Search.
 
     Run:
-        - Groups: ...
+        - Groups: Run.
         - Usage:
-            .run ...
+            .run [CODE] [--indent N]
+            .run [--PHASE CODE]... [--indent N]
         - Notes:
-            - Support other phases and allow CODE for process-phase to be optional.
-                --step run [CODE]
-                       [--discover CODE]
-                       [--initialize CODE]
-                       [--process CODE]
-                       [--finalize CODE]
-                       [--end CODE]
-                       [-i N]
-            - Confirm can support indented input.
-            - Confirm multiple `-s run` can be used in the same execution.
+            - Support code for all phases other than begin.
+            - The positional CODE is a syntactic alternative to --process CODE.
+            - Confirm that we support indented input.
+            - Confirm multiple Run steps can be used in the same execution.
 
     Eval:
-        - Groups: ...
+        - Groups: Run.
         - Usage:
-            .eval ...
+            .eval
         - Notes:
+            - Returns eval(ln.val)
 
     JsonD:
-        - Groups: ...
+        - Groups: JSON.
         - Usage:
-            .jsond ...
+            .jsond [--indent N] [--cls CLASS_NAME] [--default FUNC_NAME]
         - Notes:
+            - Returns json.dumps(ln.val)
+            - Support flags: skipkeys, ensure_ascii, check_circular, allow_nan,
+              separators, sort_keys.
+            - Get CLASS_NAME and FUNC_NAME from the Step's own globals().
 
     JsonL:
-        - Groups: ...
+        - Groups: JSON.
         - Usage:
-            .jsonl ...
+            .jsonl [--encoding E]
         - Notes:
+            - Returns json.loads(ln.val)
+            - Maybe support other json.loads() kwargs: see JsonD
 
     Format:
-        - Groups: ...
+        - Groups: String.
         - Usage:
-            .format ...
+            .format FMT
         - Notes:
+            - Generally returns FMT.format(ln.val).
+            - Uses the type of ln.val to determine the calling details:
+                - NS-sequence: format(*ln.val)
+                - Mapping: format(**ln.val)
+                - 2-tuple of (NS-sequence, mapping): format(*ln.val[0], **ln.val[1])
+                - Other: format(ln.val)
+
+            - NS-sequence.
 
     Upper:
-        - Groups: ...
+        - Groups: String.
         - Usage:
-            .upper ...
+            .upper
         - Notes:
+            - Returns ln.val.upper().
 
     Lower:
-        - Groups: ...
-        - Usage:
-            .lower ...
-        - Notes:
+        - Same as Upper.
 
     Replace:
-        - Groups: ...
+        - Groups: String.
         - Usage:
-            .replace ...
+            .replace OLD NEW [--count N]
         - Notes:
+            - Returns ln.val.replace(OLD, NEW, N)
 
     Nl:
-        - Groups: ...
+        - Groups: String.
         - Usage:
-            .nl ...
+            .nl
         - Notes:
+            - Returns ln.val if it already has a trailing newline.
+            - Otherwise, returns ln.val + '\n'.
 
     Prefix:
-        - Groups: ...
+        - Groups: String.
         - Usage:
-            .prefix ...
+            .prefix X
         - Notes:
+            - Returns X + ln.val.
 
     Suffix:
-        - Groups: ...
-        - Usage:
-            .suffix ...
-        - Notes:
-
-    Pad:
-        - Groups: ...
-        - Usage:
-            .pad ...
-        - Notes:
+        - Same as Prefix.
 
     Center:
-        - Groups: ...
+        - Groups: String.
         - Usage:
-            .center ...
+            .center WIDTH [--fillchar C]
         - Notes:
+            - returns ln.val.center(WIDTH, C)
+
+    Ljust:
+        - Same as Prefix.
+
+    Rjust:
+        - Same as Prefix.
 
     Wrap:
-        - Groups: ...
+        - Groups: String.
         - Usage:
-            .wrap ...
+            .wrap [WIDTH] [WRAPOPTS]
         - Notes:
+            - Returns textwrap.wrap(ln.val, WIDTH, **WRAPOPTS)
 
-    FileName:
-        - Groups: ...
-        - Usage:
-            .filename ...
-        - Notes:
+    Fill:
+        - Similar to Wrap.
 
-    LineNum:
-        - Groups: ...
+    Dedent:
+        - Similar to Wrap.
+
+    LineMeta:
+        - Groups: String.
         - Usage:
-            .linenum ...
+            .linemeta [FMT]
         - Notes:
+            - Returns ln.val prefixed in the grep/ack style.
+            - Default: '{path}:{line_num}:{val}'
+            - Custom FMT strings should use: path, line_num, overall_num, val.
 
     Append:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .append ...
+            .append X [--convert TYPE]
         - Notes:
+            - The --convert option supports basic types: int, float, bytes, bool.
+            - Default TYPE: str.
+            - Returns ln.val after performing ln.val.append(TYPE(X)).
 
     Extend:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .extend ...
+            .extend X... [--convert TYPE]
         - Notes:
+            - Similar to Append.
 
     Insert:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .insert ...
+            .insert I X [--convert TYPE]
         - Notes:
+            - Similar to Append.
+
+    SliceAssign:
+        - Groups: Sequence.
+        - Usage:
+            .insert START:STOP:STEP X... [--convert TYPE]
+        - Notes:
+            - Similar to Append.
 
     Pop:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .pop ...
+            .pop [I]
         - Notes:
+            - Similar to Append.
 
     Remove:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .remove ...
+            .remove X [--convert TYPE]
         - Notes:
+            - Similar to Append.
 
     Reverse:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .reverse ...
+            .reverse
         - Notes:
+            - Similar to Append.
 
     Sort:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .sort ...
+            .sort [--key CODE] [--reverse]
         - Notes:
+            - Similar to Append.
 
     Count:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .count ...
+            .count X [--convert TYPE]
         - Notes:
+            - Returns ln.val.count(TYPE(X))
 
     Len:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .len ...
+            .len
         - Notes:
+            - Returns len(ln.val).
 
     Zip:
-        - Groups: ...
+        - Groups: Sequence.
         - Usage:
-            .zip ...
+            .zip
         - Notes:
+            - Expects ln.val to be NS-sequence of iterables.
+            - Returns zip(*ln.val).
 
     Keys:
-        - Groups: ...
+        - Groups: Dict.
         - Usage:
-            .keys ...
+            .keys
         - Notes:
+            - Returns tuple(ln.val.keys()).
 
     Values:
-        - Groups: ...
-        - Usage:
-            .values ...
-        - Notes:
+        - Similar to Keys.
 
     Items:
-        - Groups: ...
-        - Usage:
-            .items ...
-        - Notes:
+        - Similar to Keys.
 
     Update:
-        - Groups: ...
+        - Groups: Dict.
         - Usage:
-            .update ...
+            .update JSON
         - Notes:
+            - Returns ln.val after calling ln.val.update(json.loads(JSON)).
 
     Dive:
-        - Groups: ...
+        - Groups: Dict.
         - Usage:
-            .dive ...
+            .dive PATH [OPTIONS]
         - Notes:
+            - Uses PATH to perform dict-dive on ln.val.
+            - Returns the val retrieved.
+            - See Stork data_dive() for details on behaviors and OPTIONS.
 
     Touch:
-        - Groups: ...
+        - Groups: FileOp.
         - Usage:
-            .touch ...
+            .touch [--return R] [--ignore-failure]
         - Notes:
+            - Touches the path defined by ln.val.
+            - R options: val, status, val-status, none.
+            - R default: val.
+            - Status is a bool indicating whether the operation succeeded.
+            - Raises on failure, unless --ignore-failure is set.
 
     Write:
-        - Groups: ...
-        - Usage:
-            .write ...
-        - Notes:
+        - Similar to Touch.
+        - Expects (PATH, VAL) tuple.
+        - Writes VAL to PATH.
 
     MkDir:
-        - Groups: ...
-        - Usage:
-            .mkdir ...
-        - Notes:
+        - Similar to Touch.
 
     RmDir:
-        - Groups: ...
-        - Usage:
-            .rmdir ...
-        - Notes:
+        - Similar to Touch.
 
     Rm:
-        - Groups: ...
-        - Usage:
-            .rm ...
-        - Notes:
+        - Similar to Touch.
+        - Also support -r behavior, either by default or via an option.
 
     Mv:
-        - Groups: ...
-        - Usage:
-            .mv ...
-        - Notes:
+        - Similar to Touch.
+        - Expects a NS-sequence:
+            - (SOURCE, TARGET)
+            - (S1, S2, ..., DIRECTORY)
 
     DirPath:
-        - Groups: ...
+        - Groups: Path.
         - Usage:
-            .dirpath ...
+            .dirpath
         - Notes:
+            - Returns os.path.dirname(ln.val).
 
     FileName:
-        - Groups: ...
-        - Usage:
-            .filename ...
-        - Notes:
+        - Similar to DirPath.
 
     BaseName:
-        - Groups: ...
-        - Usage:
-            .basename ...
-        - Notes:
+        - Similar to DirPath.
 
     Extension:
-        - Groups: ...
-        - Usage:
-            .extension ...
-        - Notes:
+        - Similar to DirPath.
 
     Abs:
-        - Groups: ...
+        - Groups: Math.
         - Usage:
-            .abs ...
+            .abs
         - Notes:
+            - Returns abs(ln.val).
 
     Round:
-        - Groups: ...
+        - Groups: Math.
         - Usage:
-            .round ...
+            .round [N]
         - Notes:
+            - Returns round(ln.val, N) if N is given.
+            - Otherwise returns round(*ln.val).
 
     DivMod:
-        - Groups: ...
-        - Usage:
-            .divmod ...
-        - Notes:
+        - Similar to Round.
 
     Pow:
-        - Groups: ...
-        - Usage:
-            .pow ...
-        - Notes:
+        - Similar to Round.
+        - Usage: .pow [X Y [Z]]
 
     GetAttr:
-        - Groups: ...
+        - Groups: GetSet.
         - Usage:
-            .getattr ...
+            .getattr [NAME] [DEFAULT] [--convert TYPE]
         - Notes:
+            - Returns getattr(ln.val, NAME, DEFAULT).
+            - If NAME not supplied, assumes ln.val is a (VAL, NAME) NS-sequence.
+            - See Append regarding --convert option, which is applied to DEFAULT.
 
     SetAttr:
-        - Groups: ...
+        - Groups: GetSet.
         - Usage:
-            .setattr ...
+            .setattr
+            .setattr NAME
+            .setattr NAME VALUE
         - Notes:
+            - Returns ln.val after calling setattr().
+            - Expected input for each usage pattern:
+                .setattr             | (OBJ, NAME, VALUE)
+                .setattr NAME        | (OBJ, VALUE)
+                .setattr NAME VALUE  | OBJ
 
     HasAttr:
-        - Groups: ...
-        - Usage:
-            .hasattr ...
-        - Notes:
+        - Similar to GetAttr.
 
     GetItem:
-        - Groups: GetSet, Index.
+        - Groups: GetSet.
         - Usage:
-            .getitem INDEX... [--strict]
+            .getitem K... [--strict]
         - Notes:
-            - If 1 INDEX, returns it.
+            - If given a single K, returns ln.val[K].
             - If multiple, returns a tuple.
 
     SetItem:
-        - Groups: ...
-        - Usage:
-            .setitem ...
-        - Notes:
+        - Similar to SetAttr.
 
     HasItem:
-        - Groups: ...
+        - Similar to HasAttr.
+
+    Group:
+        - Groups: Group.
         - Usage:
-            .hasitem ...
+            .group [RGX] [--inclusive before|after|separate]
         - Notes:
+            - Groups vals into bundles of data; emits each bundle.
+            - By default, does not emit boundary values.
+            - Inclusive options:
+                - None: drop boundary vals.
+                - Before: include boundary vals with the next group.
+                - After: include boundary vals with the previous group.
+                - Separate: emit boundary vals as their own bundle.
 
     Para:
-        - Groups: ...
-        - Usage:
-            .para ...
-        - Notes:
+        - A specialized flavor of Group.
+        - Boundary: empty line after stripping.
 
     ConvertRecord:
-        - Groups: ...
+        - Groups: FileConv.
         - Usage:
             .convertrecord ...
         - Notes:

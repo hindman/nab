@@ -2,12 +2,11 @@
 Planning
 --------
 
-Steps [see notes]:
-    - Sketch usage and naming for all proposed steps.
-    - Evaluate naming and other conventions.
-    - Decide how to handle naming conflicts: eg Count and FileName.
+Sample step: planning notes.
 
-Roadmap: finalize.
+Editing pass over Step details.
+
+Roadmap: finalize, including Step work.
 
 --------
 Core
@@ -28,10 +27,6 @@ Add Step.context [see notes].
 --------
 Later
 --------
-
-Run(): enhance.
-
-Grep(): enhance.
 
 Support leading-dot syntax and --step-mode option [see notes].
 
