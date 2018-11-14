@@ -1,18 +1,10 @@
 --------
-Improve phases
+Core behaviors
 --------
-
-Phases: rename [see notes].
 
 Support finalize-phase and steps that collect values [see notes].
 
 Support steps that emit multiple values [see notes].
-
---------
-Other core
---------
-
-Convert OPTS_CONFIG and GROUPS to methods for more natural overriding.
 
 Unicode handling [see notes].
 
