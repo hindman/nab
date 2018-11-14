@@ -1,42 +1,54 @@
 --------
-Planning
+Improve phases
 --------
 
-Sample step: planning notes.
+Phases: rename [see notes].
 
-Editing pass over Step details.
-
-Roadmap: finalize, including Step work.
-
---------
-Core
---------
-
-Rename phases [see notes].
-
-Convert OPTS_CONFIG and GROUPS to method so they can be overridden more naturally.
-
-Unicode handling [see notes].
-
-Support steps that collect values [see notes].
+Support finalize-phase and steps that collect values [see notes].
 
 Support steps that emit multiple values [see notes].
 
+--------
+Other core
+--------
+
+Convert OPTS_CONFIG and GROUPS to methods for more natural overriding.
+
+Unicode handling [see notes].
+
 Add Step.context [see notes].
+
+--------
+Step work
+--------
+
+Testing: setup; write a few basic tests of various types.
+
+Steps: rename existing steps to align with latest plan.
+
+Steps 1 [see notes]
+
+--------
+Key enhancements
+--------
+
+Support leading-dot syntax and --step-mode option [see notes].
+
+Better help [see notes].
+
+Testing: widen coverage.
+
+Steps 2 - 6 [see notes]
 
 --------
 Later
 --------
 
-Support leading-dot syntax and --step-mode option [see notes].
+Steps 7 - 8 [see notes]
 
 Support paths via several mechanisms [see notes].
 
-Better help [see notes].
-
-Some end-to-end tests to exercise most behavior.
-
-Tests for full coverage.
+Testing: full coverage.
 
 Add NabRgx helper class to simply regex usages [see notes].
 

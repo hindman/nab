@@ -113,7 +113,7 @@ Steps that collect values
         - Assemble parapraphs of data.
         - Assemble a household (eg IPUMS).
 
-    - Treat the file-end-phase as an extension of the run-phase:
+    - Treat the finalize-phase as an extension of the process-phase:
 
         - If a step defines file_end(), we call it.
 
@@ -266,181 +266,201 @@ Str(): convert to six.text_type, not Py2-str.
 Provide user an option to control encodings.
 
 --------
-Add/improve Steps
+Steps
 --------
 
-Groups:
+Roadmap:
 
-    Print
-    Strip
-    Split
-    Index
-    Select
-    Aggregate
-    Convert
-    Search
-    Run
-    String
-    Sequence
-    Dict
-    FileOp
-    Path
-    Math
-    GetSet
-    Group
-    FileConv
+    Steps 1:
+        - Write: Pr Wr
+        - Strip: Chomp Strip LStrip RStrip
+        - Split-Join: Split RSplit Join
+        - Index: Index RIndex Slice
+        - Affix: Nl Prefix Suffix
+        - Select: Head Skip Limit
+        - Aggregate: Sum Min Max ValCount
+        - Convert: Str Bytes Int Float List Tuple Set Dict Bool
+        - Search-Replace: Sub Replace Search FindAll
+
+    Steps 2:
+        - Index: Slice
+        - Affix: Center Ljust Rjust LineMeta
+        - Format: Format Upper Lower
+
+    Steps 3:
+        - Run: Run Eval
+        - Sequence: Append Extend Insert SliceAssign Pop Remove Reverse Sort Count Len Zip
+        - Get-Set: GetAttr SetAttr HasAttr GetItem SetItem HasItem
+
+    Steps 4:
+        - Dict: Keys Values Items Update
+        - Path: DirPath FileName BaseName Extension
+        - Math: Abs Round DivMod Pow
+
+    Steps 5:
+        - Select: Lines FlipFlop Grep
+        - Select: Tail Uniq Sample
+
+    Steps 6:
+        - Json: JsonD JsonL
+        - Group: Group Para
+        - Aggregate: Wc Freq
+
+    Steps 7:
+        - FileOp: Touch Write MkDir RmDir Rm Mv Cp
+        - Format: Wrap Fill Dedent
+
+    Steps 8:
+        - Index: Cols
+        - Dict: Dive
+        - FileConvert: ConvertRecord
 
 Steps:
 
-    Group     | Step
-    --------------------
-    Print     | .
-    .         | Pr
-    .         | Wr
-    Strip     | .
-    .         | Chomp
-    .         | Strip
-    .         | LStrip
-    .         | RStrip
-    Split     | .
-    .         | Split
-    .         | RSplit
-    .         | Join
-    Index     | .
-    .         | Index
-    .         | RIndex
-    .         | Slice
-    .         | Cols
-    Select    | .
-    .         | Head
-    .         | Tail
-    .         | Lines
-    .         | Skip
-    .         | Limit
-    .         | FlipFlop
-    .         | Grep
-    .         | Uniq
-    .         | Sample
-    Aggregate | .
-    .         | Sum
-    .         | Min
-    .         | Max
-    .         | ValCount
-    .         | Wc
-    .         | Freq
-    .         | Cross
-    Convert   | .
-    .         | Str
-    .         | Bytes
-    .         | Int
-    .         | Float
-    .         | List
-    .         | Tuple
-    .         | Set
-    .         | Dict
-    .         | Bool
-    Search    | .
-    .         | Sub
-    .         | Search
-    .         | FindAll
-    Run       | .
-    .         | Run
-    .         | Eval
-    JSON      | .
-    .         | JsonD
-    .         | JsonL
-    String    | .
-    .         | Format
-    .         | Upper
-    .         | Lower
-    .         | Replace
-    .         | Nl
-    .         | Prefix
-    .         | Suffix
-    .         | Center
-    .         | Ljust
-    .         | Rjust
-    .         | Wrap
-    .         | Fill
-    .         | Dedent
-    .         | LineMeta
-    Sequence  | .
-    .         | Append
-    .         | Extend
-    .         | Insert
-    .         | SliceAssign
-    .         | Pop
-    .         | Remove
-    .         | Reverse
-    .         | Sort
-    .         | Count
-    .         | Len
-    .         | Zip
-    Dict      | .
-    .         | Keys
-    .         | Values
-    .         | Items
-    .         | Update
-    .         | Dive
-    FileOp    | .
-    .         | Touch
-    .         | Write
-    .         | MkDir
-    .         | RmDir
-    .         | Rm
-    .         | Mv
-    Path      | .
-    .         | DirPath
-    .         | FileName
-    .         | BaseName
-    .         | Extension
-    Math      | .
-    .         | Abs
-    .         | Round
-    .         | DivMod
-    .         | Pow
-    GetSet    | .
-    .         | GetAttr
-    .         | SetAttr
-    .         | HasAttr
-    .         | GetItem
-    .         | SetItem
-    .         | HasItem
-    Group     | .
-    .         | Group
-    .         | Para
-    FileConv  | .
-    .         | ConvertRecord
+    Group          | Step
+    ------------------------------
+    Write          | .
+    .              | Pr
+    .              | Wr
+    Strip          | .
+    .              | Chomp
+    .              | Strip
+    .              | LStrip
+    .              | RStrip
+    Split-Join     | .
+    .              | Split
+    .              | RSplit
+    .              | Join
+    Index          | .
+    .              | Index
+    .              | RIndex
+    .              | Slice
+    .              | Cols
+    Select         | .
+    .              | Head
+    .              | Tail
+    .              | Lines
+    .              | Skip
+    .              | Limit
+    .              | FlipFlop
+    .              | Grep
+    .              | Uniq
+    .              | Sample
+    Aggregate      | .
+    .              | Sum
+    .              | Min
+    .              | Max
+    .              | ValCount
+    .              | Wc
+    .              | Freq
+    .              | Cross
+    Convert        | .
+    .              | Str
+    .              | Bytes
+    .              | Int
+    .              | Float
+    .              | List
+    .              | Tuple
+    .              | Set
+    .              | Dict
+    .              | Bool
+    Search-Replace | .
+    .              | Sub
+    .              | Replace
+    .              | Search
+    .              | FindAll
+    Run            | .
+    .              | Run
+    .              | Eval
+    Json           | .
+    .              | JsonD
+    .              | JsonL
+    Format         | .
+    .              | Format
+    .              | Upper
+    .              | Lower
+    .              | Wrap
+    .              | Fill
+    .              | Dedent
+    Affix          | .
+    .              | Nl
+    .              | Prefix
+    .              | Suffix
+    .              | Center
+    .              | Ljust
+    .              | Rjust
+    .              | LineMeta
+    Sequence       | .
+    .              | Append
+    .              | Extend
+    .              | Insert
+    .              | SliceAssign
+    .              | Pop
+    .              | Remove
+    .              | Reverse
+    .              | Sort
+    .              | Count
+    .              | Len
+    .              | Zip
+    Dict           | .
+    .              | Keys
+    .              | Values
+    .              | Items
+    .              | Update
+    .              | Dive
+    FileOp         | .
+    .              | Touch
+    .              | Write
+    .              | MkDir
+    .              | RmDir
+    .              | Rm
+    .              | Mv
+    .              | Cp
+    Path           | .
+    .              | DirPath
+    .              | FileName
+    .              | BaseName
+    .              | Extension
+    Math           | .
+    .              | Abs
+    .              | Round
+    .              | DivMod
+    .              | Pow
+    Get-Set        | .
+    .              | GetAttr
+    .              | SetAttr
+    .              | HasAttr
+    .              | GetItem
+    .              | SetItem
+    .              | HasItem
+    Group          | .
+    .              | Group
+    .              | Para
+    FileConvert    | .
+    .              | ConvertRecord
 
 Step details:
 
     Pr:
-        - Groups: Print
+        - Groups: Write.
         - Usage:
-            .pr
-            .pr --sep X --end X
+            .pr [--sep X] [--end X]
         - Notes: .
             - The --file option not needed (handled by discover phase).
-            - And --flush seems not applicable.
+            - The --flush seems not applicable.
 
     Wr:
-        - Groups: Print
-        - Usage:
-            .wr
-        - Notes:
-            - Inherit from Pr and just change the default --end option.
+        - Inherit from Pr and just change the default --end option.
 
     Chomp:
-        - Groups: Strip, String
+        - Groups: Strip.
         - Usage:
             .chomp
 
     Strip:
-        - Groups: Strip, String
+        - Groups: Strip.
         - Usage:
-            .strip
-            .strip X
-            .strip X --use-rgx
+            .strip [X] [--use-rgx]
         - Notes:
             - Default: behave like str.strip().
             - Also support regex-based stripping.
@@ -452,18 +472,16 @@ Step details:
         - Notes: see Strip.
 
     Split:
-        - Groups: Split.
+        - Groups: Split-Join.
         - Usage:
-            .split
-            .split SEP
-            .split SEP --max-split N
+            .split [SEP] [--max-split N]
         - Notes:
 
     RSplit:
         - Notes: see Split.
 
     Join:
-        - Groups: Split.
+        - Groups: Split-Join.
         - Usage:
             .join [STR]
         - Notes:
@@ -591,12 +609,16 @@ Step details:
             - The --repeated option inverts the logic: emits a val only
               if is a duplicate (and only once).
 
-    Sample: TODO
+    Sample:
         - Groups: Select.
         - Usage:
-            .sample ...
+            .sample RATE [--mode MODE] [--seed N]
         - Notes:
-            - See MPC draw.sample.basic.pl.
+            - RATE: float in the inclusive range 0..1.
+            - MODE: systematic|random (default: systematic).
+            - Seed:
+                - systematic: first unit select (default: random start).
+                - random: call random.seed(N) during begin-phase.
 
     Sum:
         - Groups: Aggregate.
@@ -664,9 +686,6 @@ Step details:
                     - By keys or vals, by ascending or descending.
                     - SORT: kasc|kdesc|vasc|vdesc (default: kasc).
 
-    Cross:
-        - Not needed; use Freq instead.
-
     Str:
         - Groups: Convert.
         - Usage:
@@ -702,7 +721,7 @@ Step details:
         - Same form as Str.
 
     Sub:
-        - Groups: Search.
+        - Groups: Search-Replace.
         - Usage:
             .sub RGX REPL [--count N] [--re-opts REOPTS] [--function]
         - Notes:
@@ -710,8 +729,15 @@ Step details:
             - If --function is set, REPL is treated as code.
             - REOPTS: delimited names such as DOTALL, MULTILINE, IGNORECASE.
 
+    Replace:
+        - Groups: Search-Replace.
+        - Usage:
+            .replace OLD NEW [--count N]
+        - Notes:
+            - Returns ln.val.replace(OLD, NEW, N)
+
     Search:
-        - Groups: Search.
+        - Groups: Search-Replace.
         - Usage:
             .search RGX [GROUP] [--re-opts REOPTS]
         - Notes:
@@ -720,7 +746,7 @@ Step details:
             - Also see Sub.
 
     FindAll:
-        - Groups: Search.
+        - Groups: Search-Replace.
         - Usage:
             .findall RGX [--re-opts REOPTS]
         - Notes:
@@ -745,7 +771,7 @@ Step details:
             - Returns eval(ln.val)
 
     JsonD:
-        - Groups: JSON.
+        - Groups: Json.
         - Usage:
             .jsond [--indent N] [--cls CLASS_NAME] [--default FUNC_NAME]
         - Notes:
@@ -755,7 +781,7 @@ Step details:
             - Get CLASS_NAME and FUNC_NAME from the Step's own globals().
 
     JsonL:
-        - Groups: JSON.
+        - Groups: Json.
         - Usage:
             .jsonl [--encoding E]
         - Notes:
@@ -763,7 +789,7 @@ Step details:
             - Maybe support other json.loads() kwargs: see JsonD
 
     Format:
-        - Groups: String.
+        - Groups: Format.
         - Usage:
             .format FMT
         - Notes:
@@ -777,7 +803,7 @@ Step details:
             - NS-sequence.
 
     Upper:
-        - Groups: String.
+        - Groups: Format.
         - Usage:
             .upper
         - Notes:
@@ -786,46 +812,8 @@ Step details:
     Lower:
         - Same as Upper.
 
-    Replace:
-        - Groups: String.
-        - Usage:
-            .replace OLD NEW [--count N]
-        - Notes:
-            - Returns ln.val.replace(OLD, NEW, N)
-
-    Nl:
-        - Groups: String.
-        - Usage:
-            .nl
-        - Notes:
-            - Returns ln.val if it already has a trailing newline.
-            - Otherwise, returns ln.val + '\n'.
-
-    Prefix:
-        - Groups: String.
-        - Usage:
-            .prefix X
-        - Notes:
-            - Returns X + ln.val.
-
-    Suffix:
-        - Same as Prefix.
-
-    Center:
-        - Groups: String.
-        - Usage:
-            .center WIDTH [--fillchar C]
-        - Notes:
-            - returns ln.val.center(WIDTH, C)
-
-    Ljust:
-        - Same as Prefix.
-
-    Rjust:
-        - Same as Prefix.
-
     Wrap:
-        - Groups: String.
+        - Groups: Format.
         - Usage:
             .wrap [WIDTH] [WRAPOPTS]
         - Notes:
@@ -837,8 +825,39 @@ Step details:
     Dedent:
         - Similar to Wrap.
 
+    Nl:
+        - Groups: Affix.
+        - Usage:
+            .nl
+        - Notes:
+            - Returns ln.val if it already has a trailing newline.
+            - Otherwise, returns ln.val + '\n'.
+
+    Prefix:
+        - Groups: Affix.
+        - Usage:
+            .prefix X
+        - Notes:
+            - Returns X + ln.val.
+
+    Suffix:
+        - Same as Prefix.
+
+    Center:
+        - Groups: Affix.
+        - Usage:
+            .center WIDTH [--fillchar C]
+        - Notes:
+            - returns ln.val.center(WIDTH, C)
+
+    Ljust:
+        - Same as Prefix.
+
+    Rjust:
+        - Same as Prefix.
+
     LineMeta:
-        - Groups: String.
+        - Groups: Affix.
         - Usage:
             .linemeta [FMT]
         - Notes:
@@ -987,6 +1006,9 @@ Step details:
             - (SOURCE, TARGET)
             - (S1, S2, ..., DIRECTORY)
 
+    Cp:
+        - Similar to Mv.
+
     DirPath:
         - Groups: Path.
         - Usage:
@@ -1026,7 +1048,7 @@ Step details:
         - Usage: .pow [X Y [Z]]
 
     GetAttr:
-        - Groups: GetSet.
+        - Groups: Get-Set.
         - Usage:
             .getattr [NAME] [DEFAULT] [--convert TYPE]
         - Notes:
@@ -1035,7 +1057,7 @@ Step details:
             - See Append regarding --convert option, which is applied to DEFAULT.
 
     SetAttr:
-        - Groups: GetSet.
+        - Groups: Get-Set.
         - Usage:
             .setattr
             .setattr NAME
@@ -1051,7 +1073,7 @@ Step details:
         - Similar to GetAttr.
 
     GetItem:
-        - Groups: GetSet.
+        - Groups: Get-Set.
         - Usage:
             .getitem K... [--strict]
         - Notes:
@@ -1084,8 +1106,9 @@ Step details:
     ConvertRecord:
         - Groups: FileConv.
         - Usage:
-            .convertrecord ...
+            .convertrecord FROM TO [--delimiter X]
         - Notes:
             - Record conversions among various file types.
-            - Support: fixed-width, delimited, JSON/YAML.
+            - FROM/TO values: fixed|delimited|json|yaml|csv.
+            - Figure out where data-dict for fixed will be specified.
 
