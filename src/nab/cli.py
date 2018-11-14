@@ -44,7 +44,7 @@ def main(args = None):
     discover_results = execute_phase(opts.steps, 'discover')
     opts.fsets = get_file_sets(opts.paths, discover_results)
 
-    # File-begin, run, and file-end phases.
+    # Initialize, process, and finalize phases.
     process_lines(opts)
 
     # End phase.
@@ -182,28 +182,28 @@ def process_lines(opts):
         '  val: {!r}',
         '',
     ))
-    steps_with_run = [
+    steps_with_process = [
         s
         for s in opts.steps
-        if step_has_phase(s, 'run')
+        if step_has_phase(s, 'process')
     ]
     ln = opts.ln
 
     # Process each input file.
     for fset in opts.fsets:
 
-        # Run phase.
+        # Process phase.
         with fset:
 
-            # File-begin phase.
+            # Initialize phase.
             ln._set_path(fset.inp, fset.out, fset.err)
-            execute_phase(opts.steps, 'file_begin')
+            execute_phase(opts.steps, 'initialize')
 
             for line in fset.inp.handle:
                 ln._set_line(line)
-                for s in steps_with_run:
+                for s in steps_with_process:
                     try:
-                        ln.val = s.run(s.opts, ln)
+                        ln.val = s.process(s.opts, ln)
                     except Exception:
                         msg = STEP_ERROR_FMT.format(
                             ln.inp.path,
@@ -219,8 +219,8 @@ def process_lines(opts):
                     if ln.val is None:
                         break
 
-            # File-end phase.
-            execute_phase(opts.steps, 'file_end')
+            # Finalize phase.
+            execute_phase(opts.steps, 'finalize')
             ln._unset_path()
 
 ####

@@ -4,6 +4,6 @@ from nab import Step, getitem
 
 class Fubb(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return getitem(ln.val, 9999999, 'FUBB: ') + ln.val
 

@@ -47,15 +47,15 @@ class Step(object):
         # file will be overwritten.
         pass
 
-    def file_begin(self, opts, ln):
+    def initialize(self, opts, ln):
         # Before a path is opened.
         pass
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         # Process one Line.
         pass
 
-    def file_end(self, opts, ln):
+    def finalize(self, opts, ln):
         # After a file is closed.
         pass
 

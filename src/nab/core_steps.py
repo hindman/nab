@@ -14,14 +14,14 @@ from .step import Step
 
 class Pr(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         if ln.val is not None:
             self.out(ln.val)
         return ln.val
 
 class Wr(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         if ln.val is not None:
             self.out(ln.val, end = '')
         return ln.val
@@ -32,7 +32,7 @@ class Wr(Step):
 
 class Chomp(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         ln.val = ln.val.rstrip('\n')
         return ln.val
 
@@ -43,7 +43,7 @@ class Strip(Step):
         dict(nargs = '?'),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         ln.val = ln.val.strip(opts.s)
         return ln.val
 
@@ -51,7 +51,7 @@ class LStrip(Step):
 
     OPTS_CONFIG = Strip.OPTS_CONFIG
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         ln.val = ln.val.lstrip(opts.s)
         return ln.val
 
@@ -59,7 +59,7 @@ class RStrip(Step):
 
     OPTS_CONFIG = Strip.OPTS_CONFIG
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         ln.val = ln.val.rstrip(opts.s)
         return ln.val
 
@@ -77,7 +77,7 @@ class Split(Step):
     def begin(self, opts, ln):
         opts.rgx = re.compile(opts.rgx) if opts.rgx else None
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         if opts.rgx:
             return opts.rgx.split(ln.val)
         else:
@@ -90,7 +90,7 @@ class Join(Step):
         dict(),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return opts.j.join(ln.val)
 
 ####
@@ -106,7 +106,7 @@ class Index(Step):
         dict(action = 'store_true'),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         try:
             return ln.val[opts.i]
         except IndexError:
@@ -131,7 +131,7 @@ class Range(Index):
         dict(nargs = '?', type = int, default = None),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return ln.val[opts.i : opts.j : opts.s]
 
 ####
@@ -145,7 +145,7 @@ class Head(Step):
         dict(type = int),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         if ln.line_num <= opts.n:
             return ln.val
 
@@ -156,7 +156,7 @@ class Skip(Step):
         dict(type = int),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         if ln.line_num > opts.n:
             return ln.val
 
@@ -166,7 +166,7 @@ class Skip(Step):
 
 class Nl(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         v = ln.val
         return v if v.endswith('\n') else v + '\n'
 
@@ -177,7 +177,7 @@ class Prefix(Step):
         dict(),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return opts.pre + ln.val
 
 class Suffix(Step):
@@ -187,7 +187,7 @@ class Suffix(Step):
         dict(),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return ln.val + opts.suff
 
 ####
@@ -199,7 +199,7 @@ class Freq(Step):
     def begin(self, opts, ln):
         opts.freq = collections.Counter()
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         opts.freq[ln.val] += 1
 
     def end(self, opts, ln):
@@ -212,7 +212,7 @@ class Sum(Step):
     def begin(self, opts, ln):
         opts.sum = 0
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         opts.sum += ln.val
 
     def end(self, opts, ln):
@@ -224,17 +224,17 @@ class Sum(Step):
 
 class Str(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return str(ln.val)
 
 class Int(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return int(float(ln.val))
 
 class Float(Step):
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return float(ln.val)
 
 ####
@@ -265,7 +265,7 @@ class Sub(Step):
             exec(code, globals(), d)
             opts.repl = d['_repl']
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return opts.rgx.sub(opts.repl, ln.val, count = opts.n)
 
 class Search(Step):
@@ -282,7 +282,7 @@ class Search(Step):
     def begin(self, opts, ln):
         opts.rgx = re.compile(opts.rgx)
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         m = opts.rgx.search(ln.val)
         if m:
             if opts.a:
@@ -308,7 +308,7 @@ class Grep(Step):
             f = re.IGNORECASE if opts.i else 0
             opts.rgx = re.compile(opts.rgx, flags = f)
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         if opts.s:
             if opts.i:
                 m = opts.rgx.lower() in ln.val.lower()
@@ -328,7 +328,7 @@ class FindAll(Step):
     def begin(self, opts, ln):
         opts.rgx = re.compile(opts.rgx)
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         return opts.rgx.findall(ln.val)
 
 ####
@@ -347,11 +347,11 @@ class Run(Step):
     def begin(self, opts, ln):
         # Reference: https://stackoverflow.com/questions/972.
         indent = ' ' * opts.i
-        fmt = 'def _run(self, opts, ln):\n{}{}\n'
+        fmt = 'def _process(self, opts, ln):\n{}{}\n'
         code = fmt.format(indent, opts.code)
         d = {}
         exec(code, globals(), d)
-        self.run = functools.partial(d['_run'], self)
+        self.process = functools.partial(d['_process'], self)
 
 ####
 # JSON handling.
@@ -364,7 +364,7 @@ class JsonD(Step):
         dict(type = int, default = 4),
     ]
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         d = json.loads(ln.val)
         return json.dumps(d, indent = opts.i)
 
@@ -386,7 +386,7 @@ class FlipFlop(Step):
         opts.rgx2 = re.compile(opts.rgx2)
         opts.on = False
 
-    def run(self, opts, ln):
+    def process(self, opts, ln):
         if opts.on:
             m = opts.rgx2.search(ln.val)
             if m:
