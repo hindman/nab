@@ -21,7 +21,7 @@ else:
 
 from . import core_steps
 from .step import Step
-from .helpers import getitem
+from .helpers import getitem, getnext
 from .version import __version__
 
 ####
@@ -43,6 +43,7 @@ def main(args = None):
     # Discover phase.
     discover_results = execute_phase(opts.steps, 'discover')
     opts.fsets = get_file_sets(opts.paths, discover_results)
+    opts.ln._set_n_files(len(opts.fsets))
 
     # Initialize, process, and finalize phases.
     process_lines(opts)
@@ -222,6 +223,63 @@ def process_lines(opts):
             # Finalize phase.
             execute_phase(opts.steps, 'finalize')
             ln._unset_path()
+
+    return
+
+    '''
+    Collect values:
+        - Treat finalize() as an extension of process().
+        - If a step defines finalize(), we call it.
+        - If a val is returned, it flows through process() for downstream steps.
+    Emit multiple values:
+        - Create a ValIter() class.
+        - When a step returns a ValIter(), the main loop will forward each
+          value from that iterable to all downstream steps.
+    '''
+
+    fiter = iter(opts.fsets)
+    liter = None
+    stack = [getnext(fiter)]
+
+    # Process each input file.
+    while stack:
+        fset = stack.pop()
+
+        # Process phase.
+        with fset:
+
+            # Initialize phase.
+            ln._set_path(fset.inp, fset.out, fset.err)
+            execute_phase(opts.steps, 'initialize')
+
+            for line in fset.inp.handle:
+                ln._set_line(line)
+                for s in steps_with_process:
+                    try:
+                        ln.val = s.process(s.opts, ln)
+                    except Exception:
+                        msg = STEP_ERROR_FMT.format(
+                            ln.inp.path,
+                            ln.out.path,
+                            ln.err.path,
+                            ln.overall_num,
+                            ln.line_num,
+                            ln.orig,
+                            ln.val,
+                        )
+                        sys.stderr.write(msg)
+                        raise
+                    if ln.val is None:
+                        break
+
+            # Finalize phase.
+            execute_phase(opts.steps, 'finalize')
+            ln._unset_path()
+
+        fset = getnext(fiter)
+        if fset:
+            stack.append(fset)
+
 
 ####
 # General helpers.
@@ -455,6 +513,10 @@ class Line(object):
         self.line_num = 0
         self.overall_num = 0
         self.file_num = 0
+        self.n_files = None
+
+    def _set_n_files(self, n):
+        self.n_files = n
 
     def _set_path(self, inp, out, err):
         self.inp = inp
@@ -478,4 +540,8 @@ class Line(object):
         self.val = line
         self.line_num += 1
         self.overall_num += 1
+
+    @property
+    def is_last_file(self):
+        return self.n_files == self.file_num
 
