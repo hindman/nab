@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import sys
 import json
 
@@ -5,8 +7,7 @@ import json
 #
 # USAGE:
 #
-#   python misc/phase-poc.py misc/phase-poc.inp >| tmp/phase-poc.got
-#   cmp tmp/phase-poc.got misc/phase-poc.exp
+#   ./misc/phase-poc.sh
 #
 # TODO:
 #
@@ -23,7 +24,7 @@ def main(args):
     paths = sys.argv[1:]
     try:
         handles = [open(p) for p in paths]
-        doit(zip(paths, handles))
+        doit(list(zip(paths, handles)))
     finally:
         for h in handles:
             h.close()
@@ -49,12 +50,12 @@ def doit(pairs):
     max_i = len(steps) - 1
 
     # Variables used to manage the processing of vals through steps:
-    # - fiter : Iterator of files to be processed.
+    # - fcoll : Collection of files to be processed.
     # - fh    : Currently active file handle.
     # - val   : A (NEXT_STEP_INDEX, VALUE) tuple.
     # - viter : An interator of such val tuples.
     # - stack : A stack of (VAL, VITER) tuples.
-    fiter = iter(pairs)
+    fcoll = FilesCollection(pairs)
     fh = None
     stack = []
 
@@ -115,7 +116,7 @@ def doit(pairs):
         # Otherwise, advance to the next input file.
         # Stop when we run out of files.
         else:
-            path, fh = getnext(pairs, (None, None))
+            path, fh = getnext(fcoll, (None, None))
             debug('D', path = path)
             if fh is None:
                 break
@@ -188,6 +189,17 @@ class ValIter(object):
 
     def __init__(self, xs):
         self.it = iter(xs)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.it)
+
+class FilesCollection(object):
+
+    def __init__(self, pairs):
+        self.it = iter(pairs)
 
     def __iter__(self):
         return self
