@@ -170,7 +170,7 @@ class Opts(object):
 # Line processing.
 ####
 
-def process_lines(opts):
+def process_lines_OLD(opts):
     # Setup.
     STEP_ERROR_FMT = '\n'.join((
         'Step error:',
@@ -183,11 +183,12 @@ def process_lines(opts):
         '  val: {!r}',
         '',
     ))
-    steps_with_process = [
-        s
-        for s in opts.steps
-        if step_has_phase(s, 'process')
-    ]
+    # steps_with_process = [
+    #     s
+    #     for s in opts.steps
+    #     if step_has_phase(s, 'process')
+    # ]
+    steps_with_process = opts.steps
     ln = opts.ln
 
     # Process each input file.
@@ -224,62 +225,112 @@ def process_lines(opts):
             execute_phase(opts.steps, 'finalize')
             ln._unset_path()
 
-    return
+def process_lines_NEW(opts):
 
-    '''
-    Collect values:
-        - Treat finalize() as an extension of process().
-        - If a step defines finalize(), we call it.
-        - If a val is returned, it flows through process() for downstream steps.
-    Emit multiple values:
-        - Create a ValIter() class.
-        - When a step returns a ValIter(), the main loop will forward each
-          value from that iterable to all downstream steps.
-    '''
+    ln = opts.ln
+    max_i = len(opts.steps) - 1
 
-    fiter = iter(opts.fsets)
-    liter = None
-    stack = [getnext(fiter)]
-
-    # Process each input file.
+    # We will use a stack with 4 types of data and will continue
+    # until the stack is empty:
+    #
+    # - FileSetCollection: An iterable of FileSet.
+    # - FileSet: An iterable of input vals (plus other stuff too).
+    # - ValIter: An iterable of values (returned by a step).
+    # - Val: A val and the index of the step to which it should be passed.
+    #
+    # We bootstrap the stack with the FileSetCollection.
+    #
+    # Every conditional branch is either terminal (meaning an iterator is
+    # exhausted or no further processing is needed for a val) or we should add
+    # one or multiple items to the stack -- multiple in cases where we get
+    # a non-null value from a still-alive iterator (in that case, we add
+    # both the iterator and a Val of the value).
+    #
+    stack = [FileSetCollection(opts.fsets)]
     while stack:
-        fset = stack.pop()
 
-        # Process phase.
-        with fset:
+        # Get the next item from the stack.
+        item = stack.pop()
 
-            # Initialize phase.
-            ln._set_path(fset.inp, fset.out, fset.err)
-            execute_phase(opts.steps, 'initialize')
+        # Val or FinalVal: either run the val through the step's process()
+        # method, or call the steps finalize() method. Either way, values
+        # returned will flow through the process() methods of downstream steps.
+        if isinstance(item, (Val, FinalVal)):
 
-            for line in fset.inp.handle:
+            # Unpack the Val/FinalVal.
+            val = item
+            i = val.step_index
+            s = opts.steps[i]
+
+            # Call process() or finalize().
+            ln.val = val.val
+            method = s.process if isinstance(item, Val) else s.finalize
+            v = method(s.opts, ln)
+            ln.val = v
+
+            # Decide what to add to the stack.
+            if i >= max_i:
+                # There are no downstream steps: we are done with this val.
+                pass
+            elif v is None:
+                # Got a null value: no need to pass it to downstream steps.
+                pass
+            elif isinstance(v, ValIter):
+                # Got a ValIter: set its step_index.
+                vit = v
+                vit.step_index = i + 1
+                stack.append(vit)
+            else:
+                # Got some other value: prepare it for the next downstream step.
+                val2 = Val(v, i + 1)
+                stack.append(val2)
+
+        # ValIter: get the next value from it.
+        elif isinstance(item, ValIter):
+            vit = item
+            v = getnext(vit)
+            if v is None:
+                pass
+            else:
+                val = Val(v, vit.step_index)
+                stack.extend((vit, val))
+
+        # FileSet: get the next line from its input.
+        elif isinstance(item, FileSet):
+            fset = item
+            line = getnext(fset)
+            if line is None:
+                # Finalize phase.
+                stack.extend(FinalVal(None, i) for i in reversed(range(max_i + 1)))
+                ln._unset_path()
+                # Close file handles.
+                fset.__exit__()
+
+            else:
                 ln._set_line(line)
-                for s in steps_with_process:
-                    try:
-                        ln.val = s.process(s.opts, ln)
-                    except Exception:
-                        msg = STEP_ERROR_FMT.format(
-                            ln.inp.path,
-                            ln.out.path,
-                            ln.err.path,
-                            ln.overall_num,
-                            ln.line_num,
-                            ln.orig,
-                            ln.val,
-                        )
-                        sys.stderr.write(msg)
-                        raise
-                    if ln.val is None:
-                        break
+                val = Val(line, 0)
+                stack.extend((fset, val))
 
-            # Finalize phase.
-            execute_phase(opts.steps, 'finalize')
-            ln._unset_path()
+        # FileSetCollection: get the next FileSet.
+        elif isinstance(item, FileSetCollection):
+            fcoll = item
+            fset = getnext(fcoll)
+            if fset is None:
+                pass
+            else:
+                # Open file handles.
+                fset.__enter__()
+                # Initialize phase.
+                ln._set_path(fset.inp, fset.out, fset.err)
+                execute_phase(opts.steps, 'initialize')
+                # Add to stack.
+                stack.extend((fcoll, fset))
 
-        fset = getnext(fiter)
-        if fset:
-            stack.append(fset)
+        else:
+            assert False, 'Should never happen'
 
+
+process_lines = process_lines_NEW
 
 ####
 # General helpers.
@@ -474,6 +525,12 @@ class FileSet(object):
         else:
             self.open_fh(fh)
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.inp.handle)
+
 def temp_file_path(n = 15):
     suffix = ''.join(random.choices(string.ascii_lowercase, k = n))
     return '/tmp/nab-' + suffix
@@ -544,4 +601,30 @@ class Line(object):
     @property
     def is_last_file(self):
         return self.n_files == self.file_num
+
+class FileSetCollection(object):
+
+    def __init__(self, files):
+        self.it = iter(files)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.it)
+
+class ValIter(object):
+
+    def __init__(self, xs):
+        self.it = iter(xs)
+        self.step_index = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.it)
+
+Val = collections.namedtuple('Val', 'val step_index')
+FinalVal = collections.namedtuple('FinalVal', 'val step_index')
 

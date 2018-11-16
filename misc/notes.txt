@@ -1,6 +1,8 @@
 --------
-Steps that collect values
+Main loop refactor
 --------
+
+Steps that collect values
 
     - Example use cases:
         - Assemble parapraphs of data.
@@ -17,9 +19,7 @@ Steps that collect values
           is_last_file() helper. This is needed in case the step requires
           special logic at the very end of the process-phase.
 
---------
 Steps that emit multiple values
---------
 
     - Create a ValIter() class.
 

@@ -1,10 +1,33 @@
 --------
+Main loop refactor
+--------
+
+Implement a Step that collects vals and uses finalize().
+    - Para
+    - Tail
+
+Implement a Step that emits multiple vals.
+    - Uniq
+
+Other issues:
+    - Robust file opening/closing.
+    - Error handling.
+    - Code cleanup/editing/renaming pass.
+
+Wrap up:
+    - Drop phase-poc.* files.
+    - Drop old notes.
+
+--------
 Core behaviors
 --------
 
-Support finalize-phase and steps that collect values [see notes].
+Module organization: decide how to split things up across files.
 
-Support steps that emit multiple values [see notes].
+Refactor Line and Step args:
+    - Pass only the relevant args to each step.
+    - Change Line() to Meta(): hold only metadata, not a val.
+    - Pass val explicitly to to process().
 
 Unicode handling [see notes].
 

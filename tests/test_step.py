@@ -6,14 +6,14 @@ from nab.cli import main
 def test_sum(tr, capsys):
 
     path = tr.get_file_path('data-ls-output.txt')
-    args = '-s split -s index 4 -s int -s sum --'.split()
-    args.append(path)
+    base_args = '-s split -s index 4 -s int -s sum --'.split()
+    exp_sum = 2916
 
-    main(args = args)
-
-    captured = capsys.readouterr()
-    assert captured.out == '2916\n'
-    assert captured.err == ''
+    for n in range(1, 4):
+        main(args = base_args + n * [path])
+        captured = capsys.readouterr()
+        assert captured.out == '{}\n'.format(n * exp_sum)
+        assert captured.err == ''
 
 def test_getitem(tr):
 

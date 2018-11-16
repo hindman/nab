@@ -53,7 +53,7 @@ class Step(object):
 
     def process(self, opts, ln):
         # Process one Line.
-        pass
+        return ln.val
 
     def finalize(self, opts, ln):
         # After a file is closed.
