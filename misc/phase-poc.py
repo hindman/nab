@@ -2,40 +2,22 @@
 
 import sys
 import json
+from collections import namedtuple
 
-####
-#
-# USAGE:
-#
-#   ./misc/phase-poc.sh
-#
-# TODO:
-#
-# - Switch to a stack with single vals, and use the type of the item
-#   popped off the stack to drive the conditional logic.
-#
-# - Convert the algorithm to stop when the stack is empty.
-#
-####
+# USAGE: ./misc/phase-poc.sh
 
 DEBUG = False
 
 def main(args):
     paths = sys.argv[1:]
     try:
-        handles = [open(p) for p in paths]
-        doit(list(zip(paths, handles)))
+        ifiles = [InputFile(p) for p in paths]
+        doit(ifiles)
     finally:
-        for h in handles:
-            h.close()
+        for f in ifiles:
+            f.fh.close()
 
-def debug(name, **kws):
-    if DEBUG:
-        d = json.dumps(kws)
-        msg = '{:>8} {}'.format(name + ':', d)
-        print(msg)
-
-def doit(pairs):
+def doit(ifiles):
 
     # The val processing steps.
     steps = (
@@ -49,84 +31,87 @@ def doit(pairs):
     )
     max_i = len(steps) - 1
 
-    # Variables used to manage the processing of vals through steps:
-    # - fcoll : Collection of files to be processed.
-    # - fh    : Currently active file handle.
-    # - val   : A (NEXT_STEP_INDEX, VALUE) tuple.
-    # - viter : An interator of such val tuples.
-    # - stack : A stack of (VAL, VITER) tuples.
-    fcoll = FilesCollection(pairs)
-    fh = None
-    stack = []
+    # We will use a stack with 4 types of data and will continue
+    # until the stack is empty:
+    #
+    # - FilesCollection: An iterable of InputFile.
+    # - InputFile: An iterable of input vals.
+    # - ValIter: An iterable of values (returned by a step).
+    # - Val: A val and the index of the step to which it should be passed.
+    #
+    # We bootstrap the stack with the FilesCollection.
+    #
+    # Every conditional branch is either terminal (meaning an iterator is
+    # exhausted or no further processing is needed for a val) or we should add
+    # one or multiple items to the stack -- multiple in cases where we get
+    # a non-null value from a still-alive iterator (in that case, we add
+    # both the iterator and a Val of the value).
+    #
+    stack = [FilesCollection(ifiles)]
+    while stack:
 
-    # Process the data until the stack is empty.
-    while True:
+        # Get the next item from the stack.
+        item = stack.pop()
+        debug('A', stack_len = len(stack), item_type = type(item).__name__)
 
-        try:
-            val, viter = stack.pop()
-            debug('0', val = val, viter = id(viter) if viter else None, stack_len = len(stack))
-        except IndexError:
-            val = None
-            viter = None
-
-        # If we already have a val, process it through its next step.
-        if val:
-            debug('A', val = val)
-            i, v = val
-            v = steps[i](v)
+        # Val: process it through its next step.
+        if isinstance(item, Val):
+            val = item
+            debug('B0', val = val)
+            i = val.step_index
+            v = steps[i](val.val)
             if i >= max_i:
                 # There are no downstream steps: we are done with this val.
-                debug('A1')
-                stack.append((None, viter))
+                debug('B1', i = i, max_i = max_i)
             elif v is None:
                 # Got a null value: no need to pass it to downstream steps.
-                debug('A2')
-                stack.append((None, viter))
+                debug('B2', v = None)
             elif isinstance(v, ValIter):
-                # We got a sequences of values. Prepare the val-iterator.
-                # And don't forget to put the current viter, if any, back on the stack.
-                tups = [(i + 1, x) for x in v]
-                debug('A3', tups = tups)
-                stack.append((None, viter))
-                stack.append((None, ValIter(tups)))
+                # Got a ValIter from the step: set its step_index.
+                v.step_index = i + 1
+                debug('B3', viter_xs = v.xs, step_index = v.step_index)
+                stack.append(v)
             else:
-                # We got a value. Prepare it for the next downstream step.
-                val = (i + 1, v)
-                debug('A4', val = val)
-                stack.append((val, viter))
+                # Got some other value: prepare it for the next downstream step.
+                val2 = Val(v, i + 1)
+                debug('B4', val = val2)
+                stack.append(val2)
 
-        # If we have an iterable of vals, get the next val.
-        elif viter:
-            val = getnext(viter)
-            debug('B', val = val)
-            if val is not None:
-                stack.append((val, viter))
+        # ValIter: get the next value from it.
+        elif isinstance(item, ValIter):
+            viter = item
+            v = getnext(viter)
+            if v is None:
+                debug('C1', v = None)
+            else:
+                val = Val(v, viter.step_index)
+                debug('C2', v = v, step_index = viter.step_index)
+                stack.extend((viter, val))
 
-        # If we have a file handle, try to get the next value from it.
-        elif fh:
-            line = getnext(fh, None)
-            debug('C', line = line)
+        # InputFile: get the next line from it.
+        elif isinstance(item, InputFile):
+            ifile = item
+            line = getnext(ifile)
             if line is None:
-                fh.close()
-                fh = None
+                debug('D1', line = None)
+                ifile.fh.close()
             else:
-                val = (0, line)
-                stack.append((val, None))
+                val = Val(line, 0)
+                debug('D2', val = val)
+                stack.extend((ifile, val))
 
-        # Otherwise, advance to the next input file.
-        # Stop when we run out of files.
+        # FilesCollection: get the next InputFile.
+        elif isinstance(item, FilesCollection):
+            fcoll = item
+            ifile = getnext(fcoll)
+            if ifile is None:
+                debug('E1', ifile = None)
+            else:
+                debug('E2', path = ifile.path)
+                stack.extend((fcoll, ifile))
+
         else:
-            path, fh = getnext(fcoll, (None, None))
-            debug('D', path = path)
-            if fh is None:
-                break
-
-def getnext(it, default = None):
-    # A non-raising next().
-    try:
-        return next(it)
-    except StopIteration:
-        return default
+            assert False, 'Should never happen'
 
 def step_strip(val):
     return val.strip()
@@ -183,29 +168,61 @@ def step_print(val):
     f.tot += val
     msg = '{:<8} : {}'.format(val, f.tot)
     msg = val
-    print(msg)
+    if DEBUG:
+        debug('ZZZZ', val = val)
+    else:
+        print(msg)
+
+def getnext(it, default = None):
+    # A non-raising next().
+    try:
+        return next(it)
+    except StopIteration:
+        return default
+
+Val = namedtuple('Val', 'val step_index')
 
 class ValIter(object):
 
     def __init__(self, xs):
+        self.xs = xs
         self.it = iter(xs)
+        self.step_index = None
 
     def __iter__(self):
         return self
 
     def __next__(self):
         return next(self.it)
+
+class InputFile(object):
+
+    def __init__(self, path):
+        self.path = path
+        self.fh = open(path)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.fh)
 
 class FilesCollection(object):
 
-    def __init__(self, pairs):
-        self.it = iter(pairs)
+    def __init__(self, ifiles):
+        self.it = iter(ifiles)
 
     def __iter__(self):
         return self
 
     def __next__(self):
         return next(self.it)
+
+def debug(name, **kws):
+    if DEBUG:
+        d = json.dumps(kws)
+        msg = '{:>8} {}'.format(name + ':', d)
+        print(msg)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
