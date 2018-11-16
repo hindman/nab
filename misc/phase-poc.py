@@ -1,6 +1,5 @@
 import sys
-from collections import deque
-import pdb
+import json
 
 ####
 #
@@ -18,6 +17,8 @@ import pdb
 #
 ####
 
+DEBUG = False
+
 def main(args):
     paths = sys.argv[1:]
     try:
@@ -27,15 +28,23 @@ def main(args):
         for h in handles:
             h.close()
 
+def debug(name, **kws):
+    if DEBUG:
+        d = json.dumps(kws)
+        msg = '{:>8} {}'.format(name + ':', d)
+        print(msg)
+
 def doit(pairs):
 
     # The val processing steps.
     steps = (
-        step_strip,
-        step_int,
-        step_decide,
-        step_double,
-        step_print,
+        step_strip,    # 0
+        step_int,      # 1
+        step_decide1,  # 2
+        step_double,   # 3
+        step_decide2,  # 4
+        step_decide3,  # 5
+        step_print,    # 6
     )
     max_i = len(steps) - 1
 
@@ -54,39 +63,48 @@ def doit(pairs):
 
         try:
             val, viter = stack.pop()
+            debug('0', val = val, viter = id(viter) if viter else None, stack_len = len(stack))
         except IndexError:
             val = None
             viter = None
 
         # If we already have a val, process it through its next step.
         if val:
+            debug('A', val = val)
             i, v = val
             v = steps[i](v)
             if i >= max_i:
                 # There are no downstream steps: we are done with this val.
+                debug('A1')
                 stack.append((None, viter))
             elif v is None:
                 # Got a null value: no need to pass it to downstream steps.
+                debug('A2')
                 stack.append((None, viter))
-            elif isinstance(v, list):
+            elif isinstance(v, ValIter):
                 # We got a sequences of values. Prepare the val-iterator.
+                # And don't forget to put the current viter, if any, back on the stack.
                 tups = [(i + 1, x) for x in v]
-                viter = iter(tups)
+                debug('A3', tups = tups)
                 stack.append((None, viter))
+                stack.append((None, ValIter(tups)))
             else:
                 # We got a value. Prepare it for the next downstream step.
                 val = (i + 1, v)
+                debug('A4', val = val)
                 stack.append((val, viter))
 
         # If we have an iterable of vals, get the next val.
         elif viter:
             val = getnext(viter)
+            debug('B', val = val)
             if val is not None:
                 stack.append((val, viter))
 
         # If we have a file handle, try to get the next value from it.
         elif fh:
             line = getnext(fh, None)
+            debug('C', line = line)
             if line is None:
                 fh.close()
                 fh = None
@@ -98,6 +116,7 @@ def doit(pairs):
         # Stop when we run out of files.
         else:
             path, fh = getnext(pairs, (None, None))
+            debug('D', path = path)
             if fh is None:
                 break
 
@@ -114,14 +133,14 @@ def step_strip(val):
 def step_int(val):
     return int(val)
 
-def step_decide(val):
-    f = step_decide
+def step_decide1(val):
+    f = step_decide1
     if not hasattr(f, 'vals'):
         f.vals = []
     if f.vals and val == 88:
         ys = [v * 100 for v in f.vals + [val]]
         f.vals = []
-        return ys
+        return ValIter(ys)
     elif f.vals:
         f.vals.append(val)
         return None
@@ -129,19 +148,52 @@ def step_decide(val):
         f.vals = [val]
         return None
     elif val == 999:
-        return [900, 90, 9]
+        return ValIter([900, 90, 9])
     else:
         return val
 
 def step_double(val):
     return val * 2
 
+def step_decide2(val):
+    f = step_decide2
+    if not hasattr(f, 'vals'):
+        f.vals = []
+    if f.vals and val == 18:
+        ys = [v + 1 for v in f.vals + [val]]
+        f.vals = []
+        return ValIter(ys)
+    elif f.vals:
+        f.vals.append(val)
+        return None
+    elif val == 18:
+        f.vals = [val]
+        return None
+    else:
+        return val
+
+def step_decide3(val):
+    return ValIter([17000, 600]) if val == 17600 else val
+
 def step_print(val):
     f = step_print
     if not hasattr(f, 'tot'):
         f.tot = 0
     f.tot += val
-    print(val)
+    msg = '{:<8} : {}'.format(val, f.tot)
+    msg = val
+    print(msg)
+
+class ValIter(object):
+
+    def __init__(self, xs):
+        self.it = iter(xs)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.it)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
