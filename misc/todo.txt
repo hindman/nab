@@ -2,14 +2,11 @@
 Main loop refactor
 --------
 
-Other issues:
-    - Robust file opening/closing.
-    - Error handling.
-    - Code cleanup/editing/renaming pass.
+- Robust file opening/closing.
 
-Wrap up:
-    - Drop phase-poc.* files.
-    - Drop old notes.
+- Error handling.
+
+- Code cleanup/editing/renaming pass.
 
 --------
 Core behaviors
