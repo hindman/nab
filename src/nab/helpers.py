@@ -29,3 +29,6 @@ class ValIter(object):
     def __next__(self):
         return next(self.it)
 
+    def next(self):
+        return self.__next__()
+

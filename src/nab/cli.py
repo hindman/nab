@@ -565,6 +565,9 @@ class FileSet(object):
     def __next__(self):
         return next(self.inp.handle)
 
+    def next(self):
+        return self.__next__()
+
 def temp_file_path(n = 15):
     suffix = ''.join(random.choices(string.ascii_lowercase, k = n))
     return '/tmp/nab-' + suffix
@@ -646,6 +649,9 @@ class FileSetCollection(object):
 
     def __next__(self):
         return next(self.it)
+
+    def next(self):
+        return self.__next__()
 
 Val = collections.namedtuple('Val', 'val step_index')
 FinalVal = collections.namedtuple('FinalVal', 'val step_index')
