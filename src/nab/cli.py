@@ -21,7 +21,7 @@ else:
 
 from . import core_steps
 from .step import Step
-from .helpers import getitem, getnext
+from .helpers import getitem, getnext, ValIter
 from .version import __version__
 
 ####
@@ -606,18 +606,6 @@ class FileSetCollection(object):
 
     def __init__(self, files):
         self.it = iter(files)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.it)
-
-class ValIter(object):
-
-    def __init__(self, xs):
-        self.it = iter(xs)
-        self.step_index = None
 
     def __iter__(self):
         return self

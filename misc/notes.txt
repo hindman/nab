@@ -525,7 +525,7 @@ Step details:
             .tail [N]
         - Notes:
             - Hold the last N vals in memory.
-            - Emit them during finalize-phase.
+            - Emit them during finalize-phase, for the last file.
 
     Lines:
         - Groups: Select.
@@ -588,7 +588,7 @@ Step details:
     Uniq:
         - Groups: Select.
         - Usage:
-            .uniq [--scope S] [--repeated] [--ignore-case]
+            .uniq [--scope S] [--repeated] [--ignore-case] [--exact]
         - Notes:
             - By default, Uniq evaluates adjacent values in the stream and
               emits only one of any adjacent set of duplicates.
@@ -596,7 +596,9 @@ Step details:
               to a whole file or the entire stream. This option requires
               holding a set of vals seen.
             - The --repeated option inverts the logic: emits a val only
-              if is a duplicate (and only once).
+              if it is a duplicate (and emit it only once).
+            - The --exact option strengthens the logic: emit a val
+              only if appeared exactly once.
 
     Sample:
         - Groups: Select.
@@ -1078,15 +1080,15 @@ Step details:
     Group:
         - Groups: Group.
         - Usage:
-            .group [RGX] [--inclusive before|after|separate]
+            .group [RGX] [--inclusive none|next|previous|separate]
         - Notes:
-            - Groups vals into bundles of data; emits each bundle.
+            - Groups vals into bundles of data; emits each group.
             - By default, does not emit boundary values.
-            - Inclusive options:
-                - None: drop boundary vals.
-                - Before: include boundary vals with the next group.
-                - After: include boundary vals with the previous group.
-                - Separate: emit boundary vals as their own bundle.
+            - Inclusive options control the groups to while boundary vals are allocated:
+                - none     : none; they are discarded (default).
+                - next     : next group.
+                - previous : previous group.
+                - separate : a separate group.
 
     Para:
         - A specialized flavor of Group.

@@ -2,13 +2,6 @@
 Main loop refactor
 --------
 
-Implement a Step that collects vals and uses finalize().
-    - Para
-    - Tail
-
-Implement a Step that emits multiple vals.
-    - Uniq
-
 Other issues:
     - Robust file opening/closing.
     - Error handling.
@@ -37,7 +30,7 @@ Add Step.context [see notes].
 Step work
 --------
 
-Testing: setup; write a few basic tests of various types.
+Testing: setup; write a few basic tests of various types; better way to capture outputs.
 
 Steps: rename existing steps to align with latest plan.
 

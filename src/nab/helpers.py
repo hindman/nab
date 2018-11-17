@@ -17,3 +17,15 @@ def getnext(it, default = None):
 def iff(pred, t = True, f = False):
     return t if pred else f
 
+class ValIter(object):
+
+    def __init__(self, xs):
+        self.it = iter(xs)
+        self.step_index = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.it)
+

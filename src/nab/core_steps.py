@@ -7,6 +7,7 @@ import re
 import functools
 
 from .step import Step
+from .helpers import ValIter
 
 ####
 # Printing and writing.
@@ -142,12 +143,31 @@ class Head(Step):
 
     OPTS_CONFIG = [
         'n',
-        dict(type = int),
+        dict(type = int, nargs = '?', default = 10),
     ]
 
     def process(self, opts, ln):
         if ln.line_num <= opts.n:
             return ln.val
+
+class Tail(Step):
+
+    OPTS_CONFIG = [
+        'n',
+        dict(type = int, nargs = '?', default = 10),
+    ]
+
+    def begin(self, opts, ln):
+        self.deq = collections.deque()
+
+    def process(self, opts, ln):
+        if len(self.deq) >= opts.n:
+            self.deq.popleft()
+        self.deq.append(ln.val)
+
+    def finalize(self, opts, ln):
+        if ln.is_last_file:
+            return ValIter(self.deq)
 
 class Skip(Step):
 
@@ -399,4 +419,45 @@ class FlipFlop(Step):
             return ln.val
         else:
             return None
+
+class Para(Step):
+
+    def begin(self, opts, ln):
+        self.para = []
+
+    def process(self, opts, ln):
+        if ln.val.strip():
+            self.para.append(ln.val)
+            return None
+        else:
+            return self.get_para()
+
+    def finalize(self, opts, ln):
+        return self.get_para()
+
+    def get_para(self):
+        if self.para:
+            res = self.para
+            self.para = []
+            return res
+        else:
+            return None
+
+class Uniq(Step):
+
+    def begin(self, opts, ln):
+        self.reset()
+
+    def process(self, opts, ln):
+        if ln.val not in self.uniq:
+            self.uniq[ln.val] = None
+
+    def finalize(self, opts, ln):
+        if ln.is_last_file and self.uniq:
+            res = self.uniq
+            self.reset()
+            return ValIter(res)
+
+    def reset(self):
+        self.uniq = collections.OrderedDict()
 
