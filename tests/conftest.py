@@ -14,6 +14,8 @@ class TestResource(object):
         fubb = 123,
     )
 
+    UTF8 = 'utf-8'
+
     def __init__(self):
         pass
 

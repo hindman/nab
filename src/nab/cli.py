@@ -234,8 +234,22 @@ def process_lines(opts):
 
 def do_process_lines(opts):
 
+    # Setup.
     ln = opts.ln
     max_i = len(opts.steps) - 1
+    error_fmt = '\n'.join((
+        '',
+        'Step error:',
+        '  inp: {}',
+        '  out: {}',
+        '  err: {}',
+        '  overall_num: {}',
+        '  line_num: {}',
+        '  orig: {!r}',
+        '  val: {!r}',
+        '',
+        '',
+    ))
 
     # We will use a stack with 4 types of data and will continue
     # until the stack is empty:
@@ -272,8 +286,21 @@ def do_process_lines(opts):
             # Call process() or finalize().
             ln.val = val.val
             method = s.process if isinstance(item, Val) else s.finalize
-            v = method(s.opts, ln)
-            ln.val = v
+            try:
+                v = method(s.opts, ln)
+                ln.val = v
+            except Exception:
+                msg = error_fmt.format(
+                    ln.inp.path,
+                    ln.out.path,
+                    ln.err.path,
+                    ln.overall_num,
+                    ln.line_num,
+                    ln.orig,
+                    ln.val,
+                )
+                sys.stderr.write(msg)
+                raise
 
             # Decide what to add to the stack.
             if i >= max_i:
@@ -307,16 +334,19 @@ def do_process_lines(opts):
             fset = item
             line = getnext(fset)
             if line is None:
-                # Finalize phase.
+                stack.append(Closer(fset))
                 stack.extend(FinalVal(None, i) for i in reversed(range(max_i + 1)))
-                ln._unset_path()
-                # Close file handles.
-                fset.close_handles()
-
             else:
                 ln._set_line(line)
                 val = Val(line, 0)
                 stack.extend((fset, val))
+
+        # Closer: close out the fset after its input has been exhausted and
+        # all finalize() calls have been fully processed.
+        elif isinstance(item, Closer):
+            fset = item.fset
+            ln._unset_path()
+            fset.close_handles()
 
         # FileSetCollection: get the next FileSet.
         elif isinstance(item, FileSetCollection):
@@ -619,4 +649,5 @@ class FileSetCollection(object):
 
 Val = collections.namedtuple('Val', 'val step_index')
 FinalVal = collections.namedtuple('FinalVal', 'val step_index')
+Closer = collections.namedtuple('Closer', 'fset')
 
