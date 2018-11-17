@@ -225,7 +225,14 @@ def process_lines_OLD(opts):
             execute_phase(opts.steps, 'finalize')
             ln._unset_path()
 
-def process_lines_NEW(opts):
+def process_lines(opts):
+    try:
+        do_process_lines(opts)
+    finally:
+        for fset in opts.fsets:
+            fset.close_handles()
+
+def do_process_lines(opts):
 
     ln = opts.ln
     max_i = len(opts.steps) - 1
@@ -304,7 +311,7 @@ def process_lines_NEW(opts):
                 stack.extend(FinalVal(None, i) for i in reversed(range(max_i + 1)))
                 ln._unset_path()
                 # Close file handles.
-                fset.__exit__()
+                fset.close_handles()
 
             else:
                 ln._set_line(line)
@@ -319,7 +326,7 @@ def process_lines_NEW(opts):
                 pass
             else:
                 # Open file handles.
-                fset.__enter__()
+                fset.open_handles()
                 # Initialize phase.
                 ln._set_path(fset.inp, fset.out, fset.err)
                 execute_phase(opts.steps, 'initialize')
@@ -328,9 +335,6 @@ def process_lines_NEW(opts):
 
         else:
             assert False, 'Should never happen'
-
-
-process_lines = process_lines_NEW
 
 ####
 # General helpers.
@@ -435,18 +439,6 @@ class FileSet(object):
         ERR: (':STDERR:', sys.stdout, 'w'),
     }
 
-    def new_fh(self, stream, obj):
-        if stream in self.STREAMS:
-            path, handle = padded_tuple(obj, 2)
-            mode = self.STREAMS[stream][2]
-            return (
-                FileHandle(path, handle, mode) if (handle or path) else
-                FileHandle(path, None, mode) if path else
-                FileHandle(*self.STREAMS[stream])
-            )
-        else:
-            raise ValueError('Invalid stream: {}'.format(stream))
-
     @classmethod
     def new(cls, obj):
         xs = padded_tuple(obj, 3)
@@ -468,7 +460,19 @@ class FileSet(object):
             self.err.path,
         )
 
-    def __enter__(self):
+    def new_fh(self, stream, obj):
+        if stream in self.STREAMS:
+            path, handle = padded_tuple(obj, 2)
+            mode = self.STREAMS[stream][2]
+            return (
+                FileHandle(path, handle, mode) if (handle or path) else
+                FileHandle(path, None, mode) if path else
+                FileHandle(*self.STREAMS[stream])
+            )
+        else:
+            raise ValueError('Invalid stream: {}'.format(stream))
+
+    def open_handles(self):
 
         # For input, output, and error, open files for either reading or
         # or writing -- unless the user already supplied file handles.
@@ -504,9 +508,9 @@ class FileSet(object):
                 # if the input/error paths are the same.
                 self.open_or_temp(efh, ifh)
 
-    def __exit__(self, *xs):
+    def close_handles(self, *xs):
         for fh in (self.inp, self.out, self.err):
-            if fh.should_close:
+            if fh.should_close and fh.handle:
                 fh.handle.close()
 
     def open_fh(self, fh, path = None):

@@ -2,8 +2,6 @@
 Main loop refactor
 --------
 
-- Robust file opening/closing.
-
 - Error handling.
 
 - Code cleanup/editing/renaming pass.
