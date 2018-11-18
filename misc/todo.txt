@@ -2,8 +2,6 @@
 Core functionality
 --------
 
-Module organization: decide how to split things up across files.
-
 Refactor Line and Step args:
     - Pass only the relevant args to each step.
     - Change Line() to Meta(): hold only metadata, not a val.

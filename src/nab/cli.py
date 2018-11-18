@@ -21,7 +21,7 @@ else:
 
 from . import core_steps
 from .step import Step
-from .helpers import getitem, getnext, ValIter
+from .utils import getitem, getnext, ValIter, Line
 from .version import __version__
 
 ####
@@ -29,7 +29,6 @@ from .version import __version__
 ####
 
 def main(args = None):
-
     # Parse command-line arguments.
     args = sys.argv[1:] if args is None else args
     opts = parse_args(args)
@@ -169,61 +168,6 @@ class Opts(object):
 ####
 # Line processing.
 ####
-
-def process_lines_OLD(opts):
-    # Setup.
-    STEP_ERROR_FMT = '\n'.join((
-        'Step error:',
-        '  inp: {}',
-        '  out: {}',
-        '  err: {}',
-        '  overall_num: {}',
-        '  line_num: {}',
-        '  orig: {!r}',
-        '  val: {!r}',
-        '',
-    ))
-    # steps_with_process = [
-    #     s
-    #     for s in opts.steps
-    #     if step_has_phase(s, 'process')
-    # ]
-    steps_with_process = opts.steps
-    ln = opts.ln
-
-    # Process each input file.
-    for fset in opts.fsets:
-
-        # Process phase.
-        with fset:
-
-            # Initialize phase.
-            ln._set_path(fset.inp, fset.out, fset.err)
-            execute_phase(opts.steps, 'initialize')
-
-            for line in fset.inp.handle:
-                ln._set_line(line)
-                for s in steps_with_process:
-                    try:
-                        ln.val = s.process(s.opts, ln)
-                    except Exception:
-                        msg = STEP_ERROR_FMT.format(
-                            ln.inp.path,
-                            ln.out.path,
-                            ln.err.path,
-                            ln.overall_num,
-                            ln.line_num,
-                            ln.orig,
-                            ln.val,
-                        )
-                        sys.stderr.write(msg)
-                        raise
-                    if ln.val is None:
-                        break
-
-            # Finalize phase.
-            execute_phase(opts.steps, 'finalize')
-            ln._unset_path()
 
 def process_lines(opts):
     try:
@@ -383,7 +327,31 @@ def do_process_lines(opts):
             assert False, 'process_lines() got an unexpected data type'
 
 ####
-# General helpers.
+# Wrapper objects used by process_lines().
+#
+# Also used, but defined elsewhere: FileSet and ValIter.
+####
+
+Val      = collections.namedtuple('Val', 'val step_index')
+FinalVal = collections.namedtuple('FinalVal', 'val step_index')
+Closer   = collections.namedtuple('Closer', 'fset')
+
+class FileSetCollection(object):
+
+    def __init__(self, files):
+        self.it = iter(files)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.it)
+
+    def next(self):
+        return self.__next__()
+
+####
+# Utility functions used to process a nab run.
 ####
 
 def get_known_steps():
@@ -458,22 +426,38 @@ def get_file_sets(orig_paths, discover_results):
     # Convert that list of paths to 3-tuples.
     return [FileSet.new(p) for p in paths]
 
-def padded_tuple(obj, padn):
-    # Wrap or convert to a tuple.
-    if obj is None or isinstance(obj, str):
-        xs = (obj,)
-    else:
-        xs = tuple(obj)
-    # Pad to desired length.
-    n = len(xs)
-    if n == padn:
-        return xs
-    elif n < padn:
-        return xs + (None,) * (padn - n)
-    else:
-        raise ValueError('tuple too large')
+####
+# FileHandle and FileSet.
+####
+
+class FileHandle(object):
+    # An object to hold a file handle and metadata associated with it.
+
+    def __init__(self, path, handle = None, mode = None):
+        if not path:
+            raise ValueError('FileHandle.path is required')
+        self.path = path
+        self.handle = handle
+        self.mode = mode
+        self.should_close = not handle
+        self.temp_path = None
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return '{}({!r})'.format(
+            self.__class__.__name__,
+            self.path,
+        )
 
 class FileSet(object):
+    # An object holding an input FileHandle and the associated FileHandle
+    # instances that should be used when writing to normal or error output for
+    # this input FileHandle.
+    #
+    # The object also functions as an iterator over the lines from the
+    # input FileHandle.
 
     INP = 'inp'
     OUT = 'out'
@@ -485,26 +469,15 @@ class FileSet(object):
         ERR: (':STDERR:', sys.stdout, 'w'),
     }
 
-    @classmethod
-    def new(cls, obj):
-        xs = padded_tuple(obj, 3)
-        return FileSet(*xs)
-
     def __init__(self, inp, out = None, err = None):
         self.inp = self.new_fh(self.INP, inp)
         self.out = self.new_fh(self.OUT, out)
         self.err = self.new_fh(self.ERR, err)
 
-    def __str__(self):
-        return repr(self)
-
-    def __repr__(self):
-        return '{}({!r}, {!r}, {!r})'.format(
-            self.__class__.__name__,
-            self.inp.path,
-            self.out.path,
-            self.err.path,
-        )
+    @classmethod
+    def new(cls, obj):
+        xs = padded_tuple(obj, 3)
+        return FileSet(*xs)
 
     def new_fh(self, stream, obj):
         if stream in self.STREAMS:
@@ -517,6 +490,17 @@ class FileSet(object):
             )
         else:
             raise ValueError('Invalid stream: {}'.format(stream))
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return '{}({!r}, {!r}, {!r})'.format(
+            self.__class__.__name__,
+            self.inp.path,
+            self.out.path,
+            self.err.path,
+        )
 
     def open_handles(self):
 
@@ -584,92 +568,22 @@ class FileSet(object):
     def next(self):
         return self.__next__()
 
-def temp_file_path(n = 15):
+def padded_tuple(obj, padn):
+    # Wrap or convert to a tuple.
+    if obj is None or isinstance(obj, str):
+        xs = (obj,)
+    else:
+        xs = tuple(obj)
+    # Pad to desired length.
+    n = len(xs)
+    if n == padn:
+        return xs
+    elif n < padn:
+        return xs + (None,) * (padn - n)
+    else:
+        raise ValueError('tuple too large')
+
+def temp_file_path(n = 30):
     suffix = ''.join(random.choices(string.ascii_lowercase, k = n))
     return '/tmp/nab-' + suffix
-
-class FileHandle(object):
-
-    def __init__(self, path, handle = None, mode = None):
-        if not path:
-            raise ValueError('FileHandle.path is required')
-        self.path = path
-        self.handle = handle
-        self.mode = mode
-        self.should_close = not handle
-        self.temp_path = None
-
-    def __str__(self):
-        return repr(self)
-
-    def __repr__(self):
-        return '{}({!r})'.format(
-            self.__class__.__name__,
-            self.path,
-        )
-
-class Line(object):
-    # A class to hold one line's worth of data as it travels
-    # through the processing pipeline. The whole program uses
-    # a single Line instance and simply resets attributes
-    # as we go from file to file and line to line.
-
-    def __init__(self):
-        self.inp = None
-        self.out = None
-        self.err = None
-        self.orig = None
-        self.val = None
-        self.line_num = 0
-        self.overall_num = 0
-        self.file_num = 0
-        self.n_files = None
-
-    def _set_n_files(self, n):
-        self.n_files = n
-
-    def _set_path(self, inp, out, err):
-        self.inp = inp
-        self.out = out
-        self.err = err
-        self.orig = None
-        self.val = None
-        self.line_num = 0
-        self.file_num += 1
-
-    def _unset_path(self):
-        self.inp = None
-        self.out = None
-        self.err = None
-        self.orig = None
-        self.val = None
-        self.line_num = 0
-
-    def _set_line(self, line):
-        self.orig = line
-        self.val = line
-        self.line_num += 1
-        self.overall_num += 1
-
-    @property
-    def is_last_file(self):
-        return self.n_files == self.file_num
-
-class FileSetCollection(object):
-
-    def __init__(self, files):
-        self.it = iter(files)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.it)
-
-    def next(self):
-        return self.__next__()
-
-Val = collections.namedtuple('Val', 'val step_index')
-FinalVal = collections.namedtuple('FinalVal', 'val step_index')
-Closer = collections.namedtuple('Closer', 'fset')
 
