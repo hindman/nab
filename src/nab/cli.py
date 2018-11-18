@@ -233,8 +233,36 @@ def process_lines(opts):
             fset.close_handles()
 
 def do_process_lines(opts):
+    # This function executes the process and finalize phases of a nab run.
+    # It uses a stack containing various types of data and continues
+    # until the stack is empty:
+    #
+    # - FileSetCollection: An iterable of FileSet. This is always the first
+    #   element in the stack (until the iterator is exhausted and we break
+    #   out of the while loop).
+    #
+    # - FileSet: An object holding an input file handle, thus functioning
+    #   as an iterator of input lines (a FileSet also holds the output and
+    #   error file handles that should be used for an input file, but
+    #   those details do not matter here).
+    #
+    # - Val: A val and the index of the next step to which it should be passed.
+    #
+    # - ValIter: An iterable of values returned by a step's process() method.
+    #   Each val in the iterable will be forwarded to all downstream steps.
+    #
+    # - FinalVal: A pseudo-val holding a step index. This item in the stack
+    #   is the signal to call the step's finalize() method. Any vals returned
+    #   by that method are forwarded to the process() method of downstream steps.
+    #
+    # - Closer: A wrapper holding a FileSet. This item in the stack is the
+    #   signal to close the file handles in the FileSet.
 
     # Setup.
+    # - A Convenience var holding the global Line instance.
+    # - The index of the last Step in the run.
+    # - A format string for printing information if a Step's process()
+    #   or finalize() methods raise an exception.
     ln = opts.ln
     max_i = len(opts.steps) - 1
     error_fmt = '\n'.join((
@@ -251,22 +279,7 @@ def do_process_lines(opts):
         '',
     ))
 
-    # We will use a stack with 4 types of data and will continue
-    # until the stack is empty:
-    #
-    # - FileSetCollection: An iterable of FileSet.
-    # - FileSet: An iterable of input vals (plus other stuff too).
-    # - ValIter: An iterable of values (returned by a step).
-    # - Val: A val and the index of the step to which it should be passed.
-    #
-    # We bootstrap the stack with the FileSetCollection.
-    #
-    # Every conditional branch is either terminal (meaning an iterator is
-    # exhausted or no further processing is needed for a val) or we should add
-    # one or multiple items to the stack -- multiple in cases where we get
-    # a non-null value from a still-alive iterator (in that case, we add
-    # both the iterator and a Val of the value).
-    #
+    # Process the stack until the FileSetCollection is exhausted.
     stack = [FileSetCollection(opts.fsets)]
     while stack:
 
@@ -274,7 +287,7 @@ def do_process_lines(opts):
         item = stack.pop()
 
         # Val or FinalVal: either run the val through the step's process()
-        # method, or call the steps finalize() method. Either way, values
+        # method, or call the step's finalize() method. Either way, values
         # returned will flow through the process() methods of downstream steps.
         if isinstance(item, (Val, FinalVal)):
 
@@ -310,61 +323,64 @@ def do_process_lines(opts):
                 # Got a null value: no need to pass it to downstream steps.
                 pass
             elif isinstance(v, ValIter):
-                # Got a ValIter: set its step_index.
+                # Got a ValIter: set its step_index and add it.
                 vit = v
                 vit.step_index = i + 1
                 stack.append(vit)
             else:
-                # Got some other value: prepare it for the next downstream step.
+                # Got a value: add it with the index for the next step.
                 val2 = Val(v, i + 1)
                 stack.append(val2)
 
-        # ValIter: get the next value from it.
+        # ValIter: get the next value from the iterator. If the iterator
+        # is not exhausted, add both the iterator and a Val to the stack.
         elif isinstance(item, ValIter):
             vit = item
             v = getnext(vit)
-            if v is None:
-                pass
-            else:
+            if v is not None:
                 val = Val(v, vit.step_index)
                 stack.extend((vit, val))
 
-        # FileSet: get the next line from its input.
+        # FileSet: get the next input line from the file.
         elif isinstance(item, FileSet):
             fset = item
             line = getnext(fset)
             if line is None:
+                # The file is exhausted: add a Closer for the FileSet to the
+                # stack, followed by a FinalVal for every step. After all
+                # finalize() methods are called, the FileSet will be closed.
                 stack.append(Closer(fset))
                 stack.extend(FinalVal(None, i) for i in reversed(range(max_i + 1)))
             else:
+                # We got a line: set up the Line instance and add both the
+                # still-alive FileSet and a Val to the stack.
                 ln._set_line(line)
                 val = Val(line, 0)
                 stack.extend((fset, val))
 
-        # Closer: close out the fset after its input has been exhausted and
-        # all finalize() calls have been fully processed.
+        # Closer: close the FileSet handles. All of input lines have been run
+        # through the process() phase, and the finalize() phase for the FileSet
+        # has also been completed.
         elif isinstance(item, Closer):
             fset = item.fset
             ln._unset_path()
             fset.close_handles()
 
-        # FileSetCollection: get the next FileSet.
+        # FileSetCollection: get the next FileSet; open its handles, prepare
+        # the Line instance, execute the initialize() phase, and then add both
+        # the still-alive FileSetCollection and the FileSet to the stack.
         elif isinstance(item, FileSetCollection):
             fcoll = item
             fset = getnext(fcoll)
-            if fset is None:
-                pass
-            else:
-                # Open file handles.
+            if fset is not None:
                 fset.open_handles()
-                # Initialize phase.
                 ln._set_path(fset.inp, fset.out, fset.err)
                 execute_phase(opts.steps, 'initialize')
-                # Add to stack.
                 stack.extend((fcoll, fset))
 
+        # Sanity check. TODO: raise a NabException of some type.
         else:
-            assert False, 'Should never happen'
+            assert False, 'process_lines() got an unexpected data type'
 
 ####
 # General helpers.

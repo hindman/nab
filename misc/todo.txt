@@ -2,8 +2,6 @@
 Core functionality
 --------
 
-process_lines(): editing pass: cleanup, comments, renaming, etc.
-
 Module organization: decide how to split things up across files.
 
 Refactor Line and Step args:
