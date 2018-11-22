@@ -201,21 +201,6 @@ Example use cases:
     - When performing any file-system operations: rm, touch, etc.
 
 --------
-Unicode handling
---------
-
-Line input: decode, if needed:
-    - ln.val should always be str (Py3) or unicde (Py2).
-    - Behavior varies between opened files and stdin.
-    - Might also vary between Py2 and Py3.
-
-Output: encode, if needed.
-
-Str(): convert to six.text_type, not Py2-str.
-
-Provide user an option to control encodings.
-
---------
 Steps
 --------
 

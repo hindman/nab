@@ -32,20 +32,23 @@ class ValIter(object):
     def next(self):
         return self.__next__()
 
-class Line(object):
-    # A class to hold one line's worth of data as it travels
-    # through the processing pipeline. The whole program uses
-    # a single Line instance and simply resets attributes
+class Meta(object):
+    # A class to hold metadata about the line and file
+    # from which the current val came. The program uses
+    # a single Meta instance and simply resets attributes
     # as we go from file to file and line to line.
 
     def __init__(self):
+        # FileHandle instances.
         self.inp = None
         self.out = None
         self.err = None
+        # The original line from which the current val arose.
         self.orig = None
-        self.val = None
+        # Line numbers: within current file and overall.
         self.line_num = 0
         self.overall_num = 0
+        # File numbers: current number and overall total.
         self.file_num = 0
         self.n_files = None
 
@@ -57,7 +60,6 @@ class Line(object):
         self.out = out
         self.err = err
         self.orig = None
-        self.val = None
         self.line_num = 0
         self.file_num += 1
 
@@ -66,12 +68,10 @@ class Line(object):
         self.out = None
         self.err = None
         self.orig = None
-        self.val = None
         self.line_num = 0
 
     def _set_line(self, line):
         self.orig = line
-        self.val = line
         self.line_num += 1
         self.overall_num += 1
 

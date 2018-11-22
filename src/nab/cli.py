@@ -21,7 +21,7 @@ else:
 
 from . import core_steps
 from .step import Step
-from .utils import getitem, getnext, ValIter, Line
+from .utils import getitem, getnext, ValIter, Meta
 from .version import __version__
 
 ####
@@ -37,18 +37,23 @@ def main(args = None):
         exit(0)
 
     # Begin phase.
-    execute_phase(opts.steps, 'begin')
+    for s in opts.steps:
+        s.begin(s.opts)
 
     # Discover phase.
-    discover_results = execute_phase(opts.steps, 'discover')
+    discover_results = []
+    for s in opts.steps:
+        r = s.discover(s.opts)
+        discover_results.append(r)
     opts.fsets = get_file_sets(opts.paths, discover_results)
-    opts.ln._set_n_files(len(opts.fsets))
+    opts.meta._set_n_files(len(opts.fsets))
 
     # Initialize, process, and finalize phases.
     process_lines(opts)
 
     # End phase.
-    execute_phase(opts.steps, 'end')
+    for s in opts.steps:
+        s.end(s.opts, opts.meta)
 
 def print_help(opts):
     msg = 'Usage: m [--help] STEP... -- [PATH...]'
@@ -77,7 +82,7 @@ def parse_args(orig_args):
         paths = [],
         fsets = [],
         valid_steps = get_known_steps(),
-        ln = Line(),
+        meta = Meta(),
     )
 
     # Handle --help (it can appear anywhere).
@@ -124,7 +129,7 @@ def parse_args(orig_args):
             d = vars(ap.parse_args(xs))
             sopts = Opts(**d)
             # Create the instance and store it.
-            step = cls(sid = i + 1, name = sname, opts = sopts, ln = opts.ln)
+            step = cls(sid = i + 1, name = sname, opts = sopts, meta = opts.meta)
             opts.steps.append(step)
         else:
             msg = 'Invalid step: {}'.format(sname)
@@ -203,11 +208,11 @@ def do_process_lines(opts):
     #   signal to close the file handles in the FileSet.
 
     # Setup.
-    # - A Convenience var holding the global Line instance.
+    # - A Convenience var holding the global Meta instance.
     # - The index of the last Step in the run.
     # - A format string for printing information if a Step's process()
     #   or finalize() methods raise an exception.
-    ln = opts.ln
+    meta = opts.meta
     max_i = len(opts.steps) - 1
     error_fmt = '\n'.join((
         '',
@@ -241,20 +246,20 @@ def do_process_lines(opts):
             s = opts.steps[i]
 
             # Call process() or finalize().
-            ln.val = val.val
-            method = s.process if isinstance(item, Val) else s.finalize
             try:
-                v = method(s.opts, ln)
-                ln.val = v
+                if isinstance(item, Val):
+                    v = s.process(s.opts, meta, val.val)
+                else:
+                    v = s.finalize(s.opts, meta)
             except Exception:
                 msg = error_fmt.format(
-                    ln.inp.path,
-                    ln.out.path,
-                    ln.err.path,
-                    ln.overall_num,
-                    ln.line_num,
-                    ln.orig,
-                    ln.val,
+                    meta.inp.path,
+                    meta.out.path,
+                    meta.err.path,
+                    meta.overall_num,
+                    meta.line_num,
+                    meta.orig,
+                    val.val,
                 )
                 sys.stderr.write(msg)
                 raise
@@ -296,9 +301,9 @@ def do_process_lines(opts):
                 stack.append(Closer(fset))
                 stack.extend(FinalVal(None, i) for i in reversed(range(max_i + 1)))
             else:
-                # We got a line: set up the Line instance and add both the
+                # We got a line: set up the Meta instance and add both the
                 # still-alive FileSet and a Val to the stack.
-                ln._set_line(line)
+                meta._set_line(line)
                 val = Val(line, 0)
                 stack.extend((fset, val))
 
@@ -307,19 +312,20 @@ def do_process_lines(opts):
         # has also been completed.
         elif isinstance(item, Closer):
             fset = item.fset
-            ln._unset_path()
+            meta._unset_path()
             fset.close_handles()
 
         # FileSetCollection: get the next FileSet; open its handles, prepare
-        # the Line instance, execute the initialize() phase, and then add both
+        # the Meta instance, execute the initialize() phase, and then add both
         # the still-alive FileSetCollection and the FileSet to the stack.
         elif isinstance(item, FileSetCollection):
             fcoll = item
             fset = getnext(fcoll)
             if fset is not None:
                 fset.open_handles()
-                ln._set_path(fset.inp, fset.out, fset.err)
-                execute_phase(opts.steps, 'initialize')
+                meta._set_path(fset.inp, fset.out, fset.err)
+                for s in opts.steps:
+                    s.initialize(s.opts, opts.meta)
                 stack.extend((fcoll, fset))
 
         # Sanity check. TODO: raise a NabException of some type.
@@ -395,23 +401,6 @@ def exit(code, msg = None):
         msg = msg if msg.endswith('\n') else msg + '\n'
         fh.write(msg)
     sys.exit(code)
-
-def step_has_phase(step, phase):
-    return (
-        phase in vars(step.__class__) or
-        phase in vars(step)
-    )
-
-def execute_phase(steps, phase):
-    results = []
-    for s in steps:
-        if step_has_phase(s, phase):
-            f = getattr(s, phase)
-            r = f(s.opts, s.ln)
-        else:
-            r = None
-        results.append(r)
-    return results
 
 def get_file_sets(orig_paths, discover_results):
     # First get the new paths, if any, returned by the discover phase.

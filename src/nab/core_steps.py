@@ -15,17 +15,15 @@ from .utils import ValIter
 
 class Pr(Step):
 
-    def process(self, opts, ln):
-        if ln.val is not None:
-            self.out(ln.val)
-        return ln.val
+    def process(self, opts, meta, val):
+        self.out(val)
+        return val
 
 class Wr(Step):
 
-    def process(self, opts, ln):
-        if ln.val is not None:
-            self.out(ln.val, end = '')
-        return ln.val
+    def process(self, opts, meta, val):
+        self.out(val, end = '')
+        return val
 
 ####
 # Chomping and stripping.
@@ -33,9 +31,8 @@ class Wr(Step):
 
 class Chomp(Step):
 
-    def process(self, opts, ln):
-        ln.val = ln.val.rstrip('\n')
-        return ln.val
+    def process(self, opts, meta, val):
+        return val.rstrip('\n')
 
 class Strip(Step):
 
@@ -44,25 +41,22 @@ class Strip(Step):
         dict(nargs = '?'),
     ]
 
-    def process(self, opts, ln):
-        ln.val = ln.val.strip(opts.s)
-        return ln.val
+    def process(self, opts, meta, val):
+        return val.strip(opts.s)
 
 class LStrip(Step):
 
     OPTS_CONFIG = Strip.OPTS_CONFIG
 
-    def process(self, opts, ln):
-        ln.val = ln.val.lstrip(opts.s)
-        return ln.val
+    def process(self, opts, meta, val):
+        return val.lstrip(opts.s)
 
 class RStrip(Step):
 
     OPTS_CONFIG = Strip.OPTS_CONFIG
 
-    def process(self, opts, ln):
-        ln.val = ln.val.rstrip(opts.s)
-        return ln.val
+    def process(self, opts, meta, val):
+        return val.rstrip(opts.s)
 
 ####
 # Splitting and joining.
@@ -75,14 +69,14 @@ class Split(Step):
         dict(nargs = '?'),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.rgx = re.compile(opts.rgx) if opts.rgx else None
 
-    def process(self, opts, ln):
+    def process(self, opts, meta, val):
         if opts.rgx:
-            return opts.rgx.split(ln.val)
+            return opts.rgx.split(val)
         else:
-            return ln.val.split()
+            return val.split()
 
 class Join(Step):
 
@@ -91,8 +85,8 @@ class Join(Step):
         dict(),
     ]
 
-    def process(self, opts, ln):
-        return opts.j.join(ln.val)
+    def process(self, opts, meta, val):
+        return opts.j.join(val)
 
 ####
 # Indexing.
@@ -107,9 +101,9 @@ class Index(Step):
         dict(action = 'store_true'),
     ]
 
-    def process(self, opts, ln):
+    def process(self, opts, meta, val):
         try:
-            return ln.val[opts.i]
+            return val[opts.i]
         except IndexError:
             if opts.strict:
                 raise
@@ -118,7 +112,7 @@ class Index(Step):
 
 class RIndex(Index):
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.i = - opts.i
 
 class Range(Index):
@@ -132,8 +126,8 @@ class Range(Index):
         dict(nargs = '?', type = int, default = None),
     ]
 
-    def process(self, opts, ln):
-        return ln.val[opts.i : opts.j : opts.s]
+    def process(self, opts, meta, val):
+        return val[opts.i : opts.j : opts.s]
 
 ####
 # Head, skip, etc.
@@ -146,9 +140,9 @@ class Head(Step):
         dict(type = int, nargs = '?', default = 10),
     ]
 
-    def process(self, opts, ln):
-        if ln.line_num <= opts.n:
-            return ln.val
+    def process(self, opts, meta, val):
+        if meta.line_num <= opts.n:
+            return val
 
 class Tail(Step):
 
@@ -157,16 +151,16 @@ class Tail(Step):
         dict(type = int, nargs = '?', default = 10),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         self.deq = collections.deque()
 
-    def process(self, opts, ln):
+    def process(self, opts, meta, val):
         if len(self.deq) >= opts.n:
             self.deq.popleft()
-        self.deq.append(ln.val)
+        self.deq.append(val)
 
-    def finalize(self, opts, ln):
-        if ln.is_last_file:
+    def finalize(self, opts, meta):
+        if meta.is_last_file:
             return ValIter(self.deq)
 
 class Skip(Step):
@@ -176,9 +170,9 @@ class Skip(Step):
         dict(type = int),
     ]
 
-    def process(self, opts, ln):
-        if ln.line_num > opts.n:
-            return ln.val
+    def process(self, opts, meta, val):
+        if meta.line_num > opts.n:
+            return val
 
 ####
 # Prefix, suffix, and trailing newline.
@@ -186,9 +180,8 @@ class Skip(Step):
 
 class Nl(Step):
 
-    def process(self, opts, ln):
-        v = ln.val
-        return v if v.endswith('\n') else v + '\n'
+    def process(self, opts, meta, val):
+        return val if val.endswith('\n') else val + '\n'
 
 class Prefix(Step):
 
@@ -197,8 +190,8 @@ class Prefix(Step):
         dict(),
     ]
 
-    def process(self, opts, ln):
-        return opts.pre + ln.val
+    def process(self, opts, meta, val):
+        return opts.pre + val
 
 class Suffix(Step):
 
@@ -207,8 +200,8 @@ class Suffix(Step):
         dict(),
     ]
 
-    def process(self, opts, ln):
-        return ln.val + opts.suff
+    def process(self, opts, meta, val):
+        return val + opts.suff
 
 ####
 # Aggregations.
@@ -216,26 +209,26 @@ class Suffix(Step):
 
 class Freq(Step):
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.freq = collections.Counter()
 
-    def process(self, opts, ln):
-        opts.freq[ln.val] += 1
+    def process(self, opts, meta, val):
+        opts.freq[val] += 1
 
-    def end(self, opts, ln):
+    def end(self, opts, meta):
         for k in sorted(opts.freq):
             msg = '{}: {}'.format(k, opts.freq[k])
             self.out(msg)
 
 class Sum(Step):
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.sum = 0
 
-    def process(self, opts, ln):
-        opts.sum += ln.val
+    def process(self, opts, meta, val):
+        opts.sum += val
 
-    def end(self, opts, ln):
+    def end(self, opts, meta):
         self.out(opts.sum)
 
 ####
@@ -244,18 +237,18 @@ class Sum(Step):
 
 class Str(Step):
 
-    def process(self, opts, ln):
-        return str(ln.val)
+    def process(self, opts, meta, val):
+        return str(val)
 
 class Int(Step):
 
-    def process(self, opts, ln):
-        return int(float(ln.val))
+    def process(self, opts, meta, val):
+        return int(float(val))
 
 class Float(Step):
 
-    def process(self, opts, ln):
-        return float(ln.val)
+    def process(self, opts, meta, val):
+        return float(val)
 
 ####
 # Regex substitution, searching, grepping, and findall.
@@ -276,7 +269,7 @@ class Sub(Step):
         dict(type = int, default = 4),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.rgx = re.compile(opts.rgx)
         if opts.f:
             indent = ' ' * opts.i
@@ -285,8 +278,8 @@ class Sub(Step):
             exec(code, globals(), d)
             opts.repl = d['_repl']
 
-    def process(self, opts, ln):
-        return opts.rgx.sub(opts.repl, ln.val, count = opts.n)
+    def process(self, opts, meta, val):
+        return opts.rgx.sub(opts.repl, val, count = opts.n)
 
 class Search(Step):
 
@@ -299,11 +292,11 @@ class Search(Step):
         dict(action = 'store_true'),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.rgx = re.compile(opts.rgx)
 
-    def process(self, opts, ln):
-        m = opts.rgx.search(ln.val)
+    def process(self, opts, meta, val):
+        m = opts.rgx.search(val)
         if m:
             if opts.a:
                 return m.groups()
@@ -323,20 +316,20 @@ class Grep(Step):
         dict(action = 'store_true'),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         if not opts.s:
             f = re.IGNORECASE if opts.i else 0
             opts.rgx = re.compile(opts.rgx, flags = f)
 
-    def process(self, opts, ln):
+    def process(self, opts, meta, val):
         if opts.s:
             if opts.i:
-                m = opts.rgx.lower() in ln.val.lower()
+                m = opts.rgx.lower() in val.lower()
             else:
-                m = opts.rgx in ln.val
+                m = opts.rgx in val
         else:
-            m = bool(opts.rgx.search(ln.val))
-        return None if m == opts.v else ln.val
+            m = bool(opts.rgx.search(val))
+        return None if m == opts.v else val
 
 class FindAll(Step):
 
@@ -345,11 +338,11 @@ class FindAll(Step):
         dict(),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.rgx = re.compile(opts.rgx)
 
-    def process(self, opts, ln):
-        return opts.rgx.findall(ln.val)
+    def process(self, opts, meta, val):
+        return opts.rgx.findall(val)
 
 ####
 # Run user-supplied code.
@@ -364,10 +357,10 @@ class Run(Step):
         dict(type = int, default = 4),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         # Reference: https://stackoverflow.com/questions/972.
         indent = ' ' * opts.i
-        fmt = 'def _process(self, opts, ln):\n{}{}\n'
+        fmt = 'def _process(self, opts, meta, val):\n{}{}\n'
         code = fmt.format(indent, opts.code)
         d = {}
         exec(code, globals(), d)
@@ -384,8 +377,8 @@ class JsonD(Step):
         dict(type = int, default = 4),
     ]
 
-    def process(self, opts, ln):
-        d = json.loads(ln.val)
+    def process(self, opts, meta, val):
+        d = json.loads(val)
         return json.dumps(d, indent = opts.i)
 
 ####
@@ -401,38 +394,38 @@ class FlipFlop(Step):
         dict(),
     ]
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         opts.rgx1 = re.compile(opts.rgx1)
         opts.rgx2 = re.compile(opts.rgx2)
         opts.on = False
 
-    def process(self, opts, ln):
+    def process(self, opts, meta, val):
         if opts.on:
-            m = opts.rgx2.search(ln.val)
+            m = opts.rgx2.search(val)
             if m:
                 opts.on = False
         else:
-            m = opts.rgx1.search(ln.val)
+            m = opts.rgx1.search(val)
             if m:
                 opts.on = True
         if opts.on:
-            return ln.val
+            return val
         else:
             return None
 
 class Para(Step):
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         self.para = []
 
-    def process(self, opts, ln):
-        if ln.val.strip():
-            self.para.append(ln.val)
+    def process(self, opts, meta, val):
+        if val.strip():
+            self.para.append(val)
             return None
         else:
             return self.get_para()
 
-    def finalize(self, opts, ln):
+    def finalize(self, opts, meta):
         return self.get_para()
 
     def get_para(self):
@@ -445,15 +438,15 @@ class Para(Step):
 
 class Uniq(Step):
 
-    def begin(self, opts, ln):
+    def begin(self, opts):
         self.reset()
 
-    def process(self, opts, ln):
-        if ln.val not in self.uniq:
-            self.uniq[ln.val] = None
+    def process(self, opts, meta, val):
+        if val not in self.uniq:
+            self.uniq[val] = None
 
-    def finalize(self, opts, ln):
-        if ln.is_last_file and self.uniq:
+    def finalize(self, opts, meta):
+        if meta.is_last_file and self.uniq:
             res = self.uniq
             self.reset()
             return ValIter(res)

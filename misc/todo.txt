@@ -2,12 +2,18 @@
 Core functionality
 --------
 
-Refactor Line and Step args:
-    - Pass only the relevant args to each step.
-    - Change Line() to Meta(): hold only metadata, not a val.
-    - Pass val explicitly to to process().
+Unicode handling:
 
-Unicode handling [see notes].
+    - Line input: decode, if needed:
+        - ln.val should always be str (Py3) or unicde (Py2).
+        - Behavior varies between opened files and stdin.
+        - Might also vary between Py2 and Py3.
+
+    - Output: encode, if needed.
+
+    - Str(): convert to six.text_type, not Py2-str.
+
+    - Provide user an option to control encodings.
 
 Add Step.context [see notes].
 
