@@ -13,6 +13,7 @@ Where:
            --step-mode short,long,name   (comma-delim; default: all)
            --paths PATH...
            --paths-stdin MARKER          (PATHS also via stdin until MARKER)
+           --encoding IN OUT             (default: utf-8 for both)
 
     STEP = --step NM SOPTS
            -s     NM SOPTS
@@ -44,8 +45,9 @@ Phase names:
 Support paths via several mechanisms
 --------
 
-    - ARGS + paths-option
+    - ARGS
     - The --paths option
+    - ARGS + --paths
     - STDIN (if paths-stdin defined)
 
     - Via a file: one path per line.
@@ -373,6 +375,9 @@ Steps:
     .              | Para
     FileConvert    | .
     .              | ConvertRecord
+    Discover       | .
+    .              | Walk
+    .              | Glob
 
 Step details:
 
@@ -1048,4 +1053,18 @@ Step details:
             - Record conversions among various file types.
             - FROM/TO values: fixed|delimited|json|yaml|csv.
             - Figure out where data-dict for fixed will be specified.
+
+    Walk:
+        - Groups: Discover.
+        - Usage:
+            .walk ROOT... [--keep PATT] [--reject PATT]
+        - Notes:
+            - Assess the options that make sense.
+
+    Glob:
+        - Groups: Discover.
+        - Usage:
+            .glob PATTERN...
+        - Notes:
+            - Assess the options that make sense.
 

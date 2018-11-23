@@ -2,24 +2,55 @@
 Core functionality
 --------
 
+discover(): implement and document:
+
+    - Adjust the implementation:
+        - Switch from the current tuple-focus to a kwarg-focus.
+        - Take open() kwargs rather than just a mode string.
+        - Allow discover() methods to collaborate: take data; return data.
+
+    - open() functions:
+        - PY2: open(name, mode, buffering) [positional only].
+        - PY3: open(file, mode, buffering, encoding, errors, newline, closefd, opener).
+
+    - Expected from a discover() call:
+        - Nothing: use paths from CLI and default out/err streams.
+        - Iterable of FileSet dicts (keys: inp, out, err).
+        - Each val for those keys should be a FileHandle dict.
+        - FileHandle keys: path, handle, all open() args.
+
+    - Implement basic discover steps:
+        - Open
+        - Walk
+        - Glob
+
 Unicode handling:
 
-    - Line input: decode, if needed:
-        - ln.val should always be str (Py3) or unicde (Py2).
-        - Behavior varies between opened files and stdin.
-        - Might also vary between Py2 and Py3.
+    - See what happens with non-ASCII input and output data.
 
-    - Output: encode, if needed.
+    - Default behavior when calling next(FH):
 
-    - Str(): convert to six.text_type, not Py2-str.
+        PY | File  | Data type
+        ------------------------
+        2  | stdin | binary_type
+        2  | file  | binary_type
+        3  | stdin | text_type
+        3  | file  | text_type
 
-    - Provide user an option to control encodings.
+    - Default:
+        - Support the `--encoding IN OUT` option (default: utf-8 for both).
+        - Read input line: if it is bytes, decode it using --encoding IN.
+        - Step.out() and Step.err(): if not bytes, encode it using --encoding OUT.
 
-Add Step.context [see notes].
+    - Implement steps.
+        - Encode
+        - Decode 
 
 --------
 Step work
 --------
+
+Add Step.context [see notes].
 
 Testing: setup; write a few basic tests of various types; better way to capture outputs.
 
@@ -52,8 +83,6 @@ Testing: full coverage.
 Add NabRgx helper class to simply regex usages [see notes].
 
 step_has_phase(): confirm that this is robust (eg inheritance).
-
-Support ability of user to control file-open mode and encodings.
 
 Support BFS processing [see notes].
 

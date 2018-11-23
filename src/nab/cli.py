@@ -473,7 +473,7 @@ class FileSet(object):
             path, handle = padded_tuple(obj, 2)
             mode = self.STREAMS[stream][2]
             return (
-                FileHandle(path, handle, mode) if (handle or path) else
+                FileHandle(path, handle, mode) if handle else
                 FileHandle(path, None, mode) if path else
                 FileHandle(*self.STREAMS[stream])
             )
