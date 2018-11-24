@@ -10,10 +10,10 @@ Where:
 
     OPTS =
            --help
+           --encoding IN OUT             (default: utf-8 for both)
            --step-mode short,long,name   (comma-delim; default: all)
            --paths PATH...
            --paths-stdin MARKER          (PATHS also via stdin until MARKER)
-           --encoding IN OUT             (default: utf-8 for both)
 
     STEP = --step NM SOPTS
            -s     NM SOPTS
@@ -294,6 +294,8 @@ Steps:
     Convert        | .
     .              | Str
     .              | Bytes
+    .              | Encode
+    .              | Decode
     .              | Int
     .              | Float
     .              | List
@@ -378,6 +380,9 @@ Steps:
     Discover       | .
     .              | Walk
     .              | Glob
+    .              | OpenInp
+    .              | OpenOut
+    .              | OpenErr
 
 Step details:
 
@@ -638,6 +643,16 @@ Step details:
 
     Bytes:
         - Same form as Str.
+
+    Encode:
+        - Groups: Convert.
+        - Usage:
+            .encode ENCODING [--errors X]
+        - Notes:
+            - Returns ln.val.encode(ENCODING, errors = X)
+
+    Decode:
+        - Same form as Encode.
 
     Int:
         - Same form as Str.
@@ -1067,4 +1082,13 @@ Step details:
             .glob PATTERN...
         - Notes:
             - Assess the options that make sense.
+
+    OpenInp, OpenOut, OpenErr:
+        - Groups: Discover.
+        - Usage:
+            .openinp [--mode M] [--buffering N] [--encoding EN] [--errors ER] [--newline NL] [--closefd]
+            .openout ...
+            .openerr ...
+        - Notes:
+            - Applies one or more settings to be used when opening files.
 

@@ -1,5 +1,5 @@
 --------
-Core functionality
+File discovery and text encodings
 --------
 
 discover(): implement and document:
@@ -9,10 +9,6 @@ discover(): implement and document:
         - Take open() kwargs rather than just a mode string.
         - Allow discover() methods to collaborate: take data; return data.
 
-    - open() functions:
-        - PY2: open(name, mode, buffering) [positional only].
-        - PY3: open(file, mode, buffering, encoding, errors, newline, closefd, opener).
-
     - Expected from a discover() call:
         - Nothing: use paths from CLI and default out/err streams.
         - Iterable of FileSet dicts (keys: inp, out, err).
@@ -20,22 +16,15 @@ discover(): implement and document:
         - FileHandle keys: path, handle, all open() args.
 
     - Implement basic discover steps:
-        - Open
-        - Walk
-        - Glob
+        - Open.
+        - Walk.
+        - Glob.
+
+    - open() functions:
+        - PY2: open(name, mode, buffering) [positional only].
+        - PY3: open(file, mode, buffering, encoding, errors, newline, closefd, opener).
 
 Unicode handling:
-
-    - See what happens with non-ASCII input and output data.
-
-    - Default behavior when calling next(FH):
-
-        PY | File  | Data type
-        ------------------------
-        2  | stdin | binary_type
-        2  | file  | binary_type
-        3  | stdin | text_type
-        3  | file  | text_type
 
     - Default:
         - Support the `--encoding IN OUT` option (default: utf-8 for both).
@@ -43,8 +32,12 @@ Unicode handling:
         - Step.out() and Step.err(): if not bytes, encode it using --encoding OUT.
 
     - Implement steps.
-        - Encode
-        - Decode 
+        - Encode.
+        - Decode.
+
+    - Default behavior when calling next(FH):
+        - Py2 | stdin/file | binary_type
+        - Py3 | stdin/file | text_type
 
 --------
 Step work
