@@ -49,6 +49,7 @@ Support paths via several mechanisms
     - The --paths option
     - ARGS + --paths
     - STDIN (if paths-stdin defined)
+    - Also support `-` as a synonym for STDIN.
 
     - Via a file: one path per line.
     - Via clipboard.

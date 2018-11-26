@@ -41,11 +41,13 @@ def main(args = None):
         s.begin(s.opts)
 
     # Discover phase.
-    discover_results = []
+    fsets = [
+        dict(inp = dict(path = p))
+        for p in opts.paths
+    ]
     for s in opts.steps:
-        r = s.discover(s.opts)
-        discover_results.append(r)
-    opts.fsets = get_file_sets(opts.paths, discover_results)
+        fsets = s.discover(s.opts, fsets)
+    opts.fsets = [FileSet(**d) for d in fsets]
     opts.meta._set_n_files(len(opts.fsets))
 
     # Initialize, process, and finalize phases.
@@ -402,19 +404,6 @@ def exit(code, msg = None):
         fh.write(msg)
     sys.exit(code)
 
-def get_file_sets(orig_paths, discover_results):
-    # First get the new paths, if any, returned by the discover phase.
-    # Then either use those or the original paths from the command line.
-    new_paths = list(filter(None, discover_results))
-    paths = new_paths[-1] if new_paths else orig_paths
-
-    # Handle STDIN-only use case.
-    if paths == ['-'] or not paths:
-        paths = [None]
-
-    # Convert that list of paths to 3-tuples.
-    return [FileSet.new(p) for p in paths]
-
 ####
 # FileHandle and FileSet.
 ####
@@ -422,12 +411,13 @@ def get_file_sets(orig_paths, discover_results):
 class FileHandle(object):
     # An object to hold a file handle and metadata associated with it.
 
-    def __init__(self, path, handle = None, mode = None):
+    def __init__(self, path = None, handle = None, mode = None, **open_kws):
         if not path:
             raise ValueError('FileHandle.path is required')
         self.path = path
         self.handle = handle
         self.mode = mode
+        self.open_kws = open_kws or {}
         self.should_close = not handle
         self.temp_path = None
 
@@ -453,9 +443,9 @@ class FileSet(object):
     ERR = 'err'
 
     STREAMS = {
-        INP: (':STDIN:', sys.stdin, 'r'),
-        OUT: (':STDOUT:', sys.stdout, 'w'),
-        ERR: (':STDERR:', sys.stdout, 'w'),
+        INP: dict(path = ':STDIN:',  handle = sys.stdin,  mode = 'r'),
+        OUT: dict(path = ':STDOUT:', handle = sys.stdout, mode = 'w'),
+        ERR: dict(path = ':STDERR:', handle = sys.stderr, mode = 'w'),
     }
 
     def __init__(self, inp, out = None, err = None):
@@ -463,22 +453,28 @@ class FileSet(object):
         self.out = self.new_fh(self.OUT, out)
         self.err = self.new_fh(self.ERR, err)
 
-    @classmethod
-    def new(cls, obj):
-        xs = padded_tuple(obj, 3)
-        return FileSet(*xs)
-
-    def new_fh(self, stream, obj):
-        if stream in self.STREAMS:
-            path, handle = padded_tuple(obj, 2)
-            mode = self.STREAMS[stream][2]
-            return (
-                FileHandle(path, handle, mode) if handle else
-                FileHandle(path, None, mode) if path else
-                FileHandle(*self.STREAMS[stream])
-            )
-        else:
+    def new_fh(self, stream, d):
+        # Determine which stream is relevant: inp, out, err.
+        try:
+            SD = self.STREAMS[stream]
+        except KeyError:
             raise ValueError('Invalid stream: {}'.format(stream))
+        # Unpack the key FileHandle arguments.
+        d = dict(d) if d else {}
+        path = d.pop('path', None)
+        handle = d.pop('handle', None)
+        mode = d.pop('mode', SD['mode'])
+        # Return a FileHandle.
+        if handle:
+            # If a discover() method supplied a handle, it must also supply a path.
+            return FileHandle(path, handle, mode, **d)
+        elif path:
+            # If it supplies only a path, nab will open and close a handle.
+            return FileHandle(path, None, mode, **d)
+        else:
+            # Otherwise, we will use the standard streams.
+            # TODO: figure out if mode and/or open_kws make sense here.
+            return FileHandle(SD['path'], SD['handle'], mode, **d)
 
     def __str__(self):
         return repr(self)
@@ -533,7 +529,9 @@ class FileSet(object):
                 fh.handle.close()
 
     def open_fh(self, fh, path = None):
-        fh.handle = open(path or fh.path, fh.mode)
+        # PY2: open(name, mode, buffering)
+        # PY3: open(file, mode, buffering, encoding, errors, newline, closefd, opener).
+        fh.handle = open(path or fh.path, fh.mode, **fh.open_kws)
 
     def open_or_reuse(self, fh, other):
         if fh.path == other.path:
@@ -556,21 +554,6 @@ class FileSet(object):
 
     def next(self):
         return self.__next__()
-
-def padded_tuple(obj, padn):
-    # Wrap or convert to a tuple.
-    if obj is None or isinstance(obj, str):
-        xs = (obj,)
-    else:
-        xs = tuple(obj)
-    # Pad to desired length.
-    n = len(xs)
-    if n == padn:
-        return xs
-    elif n < padn:
-        return xs + (None,) * (padn - n)
-    else:
-        raise ValueError('tuple too large')
 
 def temp_file_path(n = 30):
     suffix = ''.join(random.choices(string.ascii_lowercase, k = n))

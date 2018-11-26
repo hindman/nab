@@ -39,13 +39,23 @@ class Step(object):
         # to define its other hooks dynamically.
         pass
 
-    def discover(self, opts):
-        # A Step can return a new list of paths to be used. It can be either a
-        # list of INPUT_PATH or a list of (INPUT_PATH, OUTPUT_PATH) pairs. In
-        # the latter case, the output will go to separate files rather than to
-        # a consolidated STDOUT. If the paths in a pari are equal, the original
-        # file will be overwritten.
-        pass
+    def discover(self, opts, fsets):
+        # Takes a list-of-dict-of-dict:
+        #
+        # - Each outer dict represents a FileSet (keys: inp, out, err).
+        #
+        # - Each inner-dict represents a FileHandle (keys: path, handle, and
+        #   any arguments taken by the built-in open() function).
+        #
+        # The function can return a new list to replace the prior list.
+        #
+        # The most common approach is to return FileHandle dicts with a path
+        # and, occasionally, kwargs for open(). In that case, nab will open and
+        # close files on behalf of the user. For more specialize needs, the
+        # FileHandle dict can include an already opened file handle. In this
+        # case, nab will not open/close the file; nonetheless, the path
+        # argument is still required (for debugging purposes).
+        return fsets
 
     def initialize(self, opts, meta):
         # Before a path is opened.

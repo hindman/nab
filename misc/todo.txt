@@ -2,27 +2,10 @@
 File discovery and text encodings
 --------
 
-discover(): implement and document:
-
-    - Adjust the implementation:
-        - Switch from the current tuple-focus to a kwarg-focus.
-        - Take open() kwargs rather than just a mode string.
-        - Allow discover() methods to collaborate: take data; return data.
-
-    - Expected from a discover() call:
-        - Nothing: use paths from CLI and default out/err streams.
-        - Iterable of FileSet dicts (keys: inp, out, err).
-        - Each val for those keys should be a FileHandle dict.
-        - FileHandle keys: path, handle, all open() args.
-
-    - Implement basic discover steps:
-        - Open.
-        - Walk.
-        - Glob.
-
-    - open() functions:
-        - PY2: open(name, mode, buffering) [positional only].
-        - PY3: open(file, mode, buffering, encoding, errors, newline, closefd, opener).
+Implement basic discover steps:
+    - Open.
+    - Walk.
+    - Glob.
 
 Unicode handling:
 
@@ -70,6 +53,8 @@ Later
 Steps 7 - 8 [see notes]
 
 Support paths via several mechanisms [see notes].
+
+Debuggability and logging.
 
 Testing: full coverage.
 
