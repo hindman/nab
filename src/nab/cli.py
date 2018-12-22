@@ -41,13 +41,27 @@ def main(args = None):
         s.begin(s.opts)
 
     # Discover phase.
-    fsets = [
-        dict(inp = dict(path = p))
-        for p in opts.paths
-    ]
+    #
+    # 1. Prepare the initial list-of-dict-of-dict, based on the file paths from
+    # the command-line arguments. Those collections hold the raw data for the
+    # following types of objects: FileSetCollection (the outer list), FileSet
+    # (the outer dicts), and FileHandle (the inner dicts).
+    #
+    # 2. Pass the list into each step's discover() method. It can return a new
+    # list to replace the old one. Also see Step.discover().
+    #
+    # 3. If we end up with an empty list after the discovery phase, we default
+    # to regular behavior: a single FileSet where we will read from STDIN and
+    # write to STDOUT/STDERR.
+    #
+    # 4. Convert the raw data to the objects listed above and store the list of
+    # FileSet on opts.
+    #
+    raw_fsets = [FileSet.raw_fset(p) for p in opts.paths]
     for s in opts.steps:
-        fsets = s.discover(s.opts, fsets)
-    opts.fsets = [FileSet(**d) for d in fsets]
+        raw_fsets = s.discover(s.opts, raw_fsets)
+    raw_fsets = raw_fsets or [FileSet.raw_fset(None)]
+    opts.fsets = [FileSet(**d) for d in raw_fsets]
     opts.meta._set_n_files(len(opts.fsets))
 
     # Initialize, process, and finalize phases.
@@ -346,8 +360,10 @@ Closer   = collections.namedtuple('Closer', 'fset')
 
 class FileSetCollection(object):
 
-    def __init__(self, files):
-        self.it = iter(files)
+    # TODO: a class can be made iterable in a simpler way.
+
+    def __init__(self, fsets):
+        self.it = iter(fsets)
 
     def __iter__(self):
         return self
@@ -475,6 +491,11 @@ class FileSet(object):
             # Otherwise, we will use the standard streams.
             # TODO: figure out if mode and/or open_kws make sense here.
             return FileHandle(SD['path'], SD['handle'], mode, **d)
+
+    @staticmethod
+    def raw_fset(path):
+        d = {} if path is None else dict(path = path)
+        return dict(inp = d)
 
     def __str__(self):
         return repr(self)
