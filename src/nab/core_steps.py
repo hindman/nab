@@ -15,11 +15,17 @@ from .utils import ValIter
 
 class Pr(Step):
 
+    DESC = 'Print VAL'
+    USAGE = '.'
+
     def process(self, opts, meta, val):
         self.out(val)
         return val
 
 class Wr(Step):
+
+    DESC = 'Print VAL'
+    USAGE = '.'
 
     def process(self, opts, meta, val):
         self.out(val, end = '')
@@ -31,10 +37,16 @@ class Wr(Step):
 
 class Chomp(Step):
 
+    DESC = 'Right-strip newline from VAL'
+    USAGE = '.'
+
     def process(self, opts, meta, val):
         return val.rstrip('\n')
 
 class Strip(Step):
+
+    DESC = 'Strip VAL'
+    USAGE = '[CHARS]'
 
     OPTS_CONFIG = [
         's',
@@ -46,12 +58,18 @@ class Strip(Step):
 
 class LStrip(Step):
 
+    DESC = 'Left-strip VAL'
+    USAGE = '[CHARS]'
+
     OPTS_CONFIG = Strip.OPTS_CONFIG
 
     def process(self, opts, meta, val):
         return val.lstrip(opts.s)
 
 class RStrip(Step):
+
+    DESC = 'Right-strip VAL'
+    USAGE = '[CHARS]'
 
     OPTS_CONFIG = Strip.OPTS_CONFIG
 
@@ -63,6 +81,9 @@ class RStrip(Step):
 ####
 
 class Split(Step):
+
+    DESC = 'Split VAL'
+    USAGE = '[RGX]'
 
     OPTS_CONFIG = [
         'rgx',
@@ -80,6 +101,9 @@ class Split(Step):
 
 class Join(Step):
 
+    DESC = 'Join elements of VAL'
+    USAGE = 'JOIN'
+
     OPTS_CONFIG = [
         'j',
         dict(),
@@ -93,6 +117,9 @@ class Join(Step):
 ####
 
 class Index(Step):
+
+    DESC = 'Get element at index from VAL'
+    USAGE = 'I [--strict]'
 
     OPTS_CONFIG = [
         'i',
@@ -112,10 +139,16 @@ class Index(Step):
 
 class RIndex(Index):
 
+    DESC = 'Get element at right-index from VAL'
+    USAGE = 'I [--strict]'
+
     def begin(self, opts):
         opts.i = - opts.i
 
 class Range(Index):
+
+    DESC = 'Get range from VAL'
+    USAGE = 'START STOP [STEP]'
 
     OPTS_CONFIG = [
         'i',
@@ -135,6 +168,9 @@ class Range(Index):
 
 class Head(Step):
 
+    DESC = 'Get first N VALs'
+    USAGE = '[N]'
+
     OPTS_CONFIG = [
         'n',
         dict(type = int, nargs = '?', default = 10),
@@ -145,6 +181,9 @@ class Head(Step):
             return val
 
 class Tail(Step):
+
+    DESC = 'Get last N VALs'
+    USAGE = '[N]'
 
     OPTS_CONFIG = [
         'n',
@@ -165,6 +204,9 @@ class Tail(Step):
 
 class Skip(Step):
 
+    DESC = 'Skip N VALs'
+    USAGE = 'N'
+
     OPTS_CONFIG = [
         'n',
         dict(type = int),
@@ -180,10 +222,16 @@ class Skip(Step):
 
 class Nl(Step):
 
+    DESC = 'Add newline to end of VAL'
+    USAGE = '.'
+
     def process(self, opts, meta, val):
         return val if val.endswith('\n') else val + '\n'
 
 class Prefix(Step):
+
+    DESC = 'Add prefix to VAL'
+    USAGE = 'PRE'
 
     OPTS_CONFIG = [
         'pre',
@@ -194,6 +242,9 @@ class Prefix(Step):
         return opts.pre + val
 
 class Suffix(Step):
+
+    DESC = 'Add suffix to VAL'
+    USAGE = 'SUFF'
 
     OPTS_CONFIG = [
         'suff',
@@ -209,6 +260,9 @@ class Suffix(Step):
 
 class Freq(Step):
 
+    DESC = 'Compute and print freq dist of VALs'
+    USAGE = '.'
+
     def begin(self, opts):
         opts.freq = collections.Counter()
 
@@ -221,6 +275,9 @@ class Freq(Step):
             self.out(msg)
 
 class Sum(Step):
+
+    DESC = 'Compute and print sum of VALs'
+    USAGE = '.'
 
     def begin(self, opts):
         opts.sum = 0
@@ -237,15 +294,24 @@ class Sum(Step):
 
 class Str(Step):
 
+    DESC = 'Convert VAL to str'
+    USAGE = '.'
+
     def process(self, opts, meta, val):
         return str(val)
 
 class Int(Step):
 
+    DESC = 'Convert VAL to int'
+    USAGE = '.'
+
     def process(self, opts, meta, val):
         return int(float(val))
 
 class Float(Step):
+
+    DESC = 'Convert VAL to float'
+    USAGE = '.'
 
     def process(self, opts, meta, val):
         return float(val)
@@ -255,6 +321,9 @@ class Float(Step):
 ####
 
 class Sub(Step):
+
+    DESC = 'Find regex in VAL and replace it'
+    USAGE = 'RGX REPL [-n N] [-f] [-i N]'
 
     OPTS_CONFIG = [
         'rgx',
@@ -283,6 +352,9 @@ class Sub(Step):
 
 class Search(Step):
 
+    DESC = 'Find regex in VAL and get it'
+    USAGE = 'RGX [-g N] [-a]'
+
     OPTS_CONFIG = [
         'rgx',
         dict(),
@@ -304,6 +376,9 @@ class Search(Step):
                 return m.group(opts.g)
 
 class Grep(Step):
+
+    DESC = 'Use regex to filter VALs'
+    USAGE = 'RGX [-i] [-v] [-s]'
 
     OPTS_CONFIG = [
         'rgx',
@@ -333,6 +408,9 @@ class Grep(Step):
 
 class FindAll(Step):
 
+    DESC = 'Find all in VAL'
+    USAGE = 'RGX'
+
     OPTS_CONFIG = [
         'rgx',
         dict(),
@@ -349,6 +427,9 @@ class FindAll(Step):
 ####
 
 class Run(Step):
+
+    DESC = 'Run code against VAL'
+    USAGE = 'CODE [-i N]'
 
     OPTS_CONFIG = [
         'code',
@@ -372,6 +453,9 @@ class Run(Step):
 
 class JsonD(Step):
 
+    DESC = 'Convert VAL to JSON'
+    USAGE = '[I]'
+
     OPTS_CONFIG = [
         '-i',
         dict(type = int, default = 4),
@@ -386,6 +470,9 @@ class JsonD(Step):
 ####
 
 class FlipFlop(Step):
+
+    DESC = 'Filter VALs using flip-flop regexes'
+    USAGE = 'RGX RGX'
 
     OPTS_CONFIG = [
         'rgx1',
@@ -415,6 +502,9 @@ class FlipFlop(Step):
 
 class Para(Step):
 
+    DESC = 'Group VALs as paragraphs and emit'
+    USAGE = '.'
+
     def begin(self, opts):
         self.para = []
 
@@ -437,6 +527,9 @@ class Para(Step):
             return None
 
 class Uniq(Step):
+
+    DESC = 'Emit unique VALs'
+    USAGE = '.'
 
     def begin(self, opts):
         self.reset()

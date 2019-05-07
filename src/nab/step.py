@@ -7,6 +7,7 @@ class Step(object):
     NAME = None
     GROUPS = []
     DESC = None
+    USAGE = None
     OPTS_CONFIG = None
 
     def __init__(self, sid, name, opts, meta):

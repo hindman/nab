@@ -73,10 +73,14 @@ def main(args = None):
 
 def print_help(opts):
     msg = 'Usage: m [--help] STEP... -- [PATH...]'
+    fmt = '  {:<12} {:<40} {}'
     print(msg)
     print('\nSteps:')
-    for sname in opts.valid_steps:
-        print('  ' + sname)
+    for sname, step in opts.valid_steps.items():
+        d = step.DESC or ''
+        h = step.USAGE or ''
+        msg = fmt.format(sname, d, h)
+        print(msg)
 
 ####
 # CLI argument parsing.
