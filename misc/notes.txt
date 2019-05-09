@@ -6,11 +6,11 @@ INPUT | nab [OPTS] STEP... [-- PATH...]
 
 Where:
 
-    INPUT = input data via stdin (INPUT or PATHS + MARKER + INPUT)
+    INPUT = input data via stdin (VALS or PATHS+MARKER+VALS)
 
     OPTS =
            --help
-           --encoding IN OUT             (default: utf-8 for both)
+           --encoding IN,OUT,ERR         (default: utf-8 for all)
            --step-mode short,long,name   (comma-delim; default: all)
            --paths PATH...
            --paths-stdin MARKER          (PATHS also via stdin until MARKER)
@@ -101,7 +101,7 @@ NabRgx:
 Support BFS processing
 --------
 
-    - Use cases: wny time file-wide holistic knowledge (presumably collected by
+    - Use cases: any time file-wide holistic knowledge (presumably collected by
       early steps and stored in self.context) is needed by subsequent steps.
 
     - A default line-processing program is DFS:

@@ -3,7 +3,7 @@ File discovery and text encodings
 --------
 
 Implement basic discover steps:
-    - Open.
+    - OpenInp, OpenOut, OpenErr.
     - Walk.
     - Glob.
 
