@@ -5,6 +5,7 @@ import json
 import random
 import re
 import functools
+import sys
 
 from .step import Step
 from .utils import ValIter
@@ -261,17 +262,35 @@ class Suffix(Step):
 class Freq(Step):
 
     DESC = 'Compute and print freq dist of VALs'
-    USAGE = '.'
+    USAGE = '[--reverse] [--flip] [--delim D] [--rng X Y]'
+
+    OPTS_CONFIG = [
+        '--reverse',
+        dict(action = 'store_true'),
+        '--flip',
+        dict(action = 'store_true'),
+        '--delim',
+        dict(default = ':'),
+        '--rng',
+        dict(type = int, nargs = 2, default = [-1, sys.maxsize]),
+    ]
 
     def begin(self, opts):
         opts.freq = collections.Counter()
+        opts.rng = range(*opts.rng)
 
     def process(self, opts, meta, val):
         opts.freq[val] += 1
 
     def end(self, opts, meta):
-        for k in sorted(opts.freq):
-            msg = '{}: {}'.format(k, opts.freq[k])
+        tups = [
+            (n, k)
+            for k, n in opts.freq.items()
+            if n in opts.rng
+        ]
+        for n, k in sorted(tups, reverse = not opts.reverse):
+            xs = (k, opts.delim, n) if opts.flip else (n, opts.delim, k)
+            msg = '{} {} {}'.format(*xs)
             self.out(msg)
 
 class Sum(Step):
