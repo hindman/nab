@@ -24,21 +24,23 @@ author_email = 'mhindman@gmail.com'
 ####
 
 reqs = [
-    'six>=1.10.0',
+    'six',
 ]
 
 extras = {
     'test' : [
-        'coverage>=4.1',
-        'pytest-cache>=1.0',
-        'pytest-cov>=2.3.0',
-        'pytest>=2.9.2',
-        'tox>=2.3.1',
+        'coverage',
+        'pytest',
+        'pytest-cache',
+        'pytest-cov',
+        'tox',
     ],
     'dev' : [
-        'Pygments>=2.1.3',
-        'Sphinx >=1.4.4, <1.5',
-        'pycodestyle>=2.3.1',
+        'ipython',
+        'pycodestyle',
+        'twine',
+        'virtualenv',
+        'virtualenvwrapper',
     ],
 }
 
