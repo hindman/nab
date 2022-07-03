@@ -72,7 +72,7 @@ def main(args = None):
         s.end(s.opts, opts.meta)
 
 def print_help(opts):
-    msg = 'Usage: m [--help] STEP... -- [PATH...]'
+    msg = 'Usage: m [--help] -s STEP ... -- [PATH...]'
     fmt = '  {:<12} {:<40} {}'
     print(msg)
     print('\nSteps:')
