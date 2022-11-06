@@ -28,6 +28,9 @@ Step work
 
 Add Step.context [see notes].
 
+Ability to easily add new steps that are merely aliases for already existing
+steps. For example, `-s nonblank` could be implmented as `-s grep '\S'`.
+
 Testing: setup; write a few basic tests of various types; better way to capture outputs.
 
 Steps: rename existing steps to align with latest plan.
